@@ -6,7 +6,9 @@ enum DateExtractor {
 
     static let birazdanPhrases: [[String]] = [["az", "sonra"], ["biraz", "sonra"], ["kisa", "sure", "sonra"],
                                               ["birazcik", "sonra"]]
-    static let offsetTailWords: Set<String> = ["sonra", "sonraya", "icinde", "icerisinde"]
+    /// "sonra" and its suffixed forms after a duration ("1 dakika sonrasına", "yarım saat sonrasında").
+    static let sonraTailWords: Set<String> = ["sonra", "sonraya", "sonrasi", "sonrasina", "sonrasinda"]
+    static let offsetTailWords: Set<String> = sonraTailWords.union(["icinde", "icerisinde"])
     static let snoozeVerbWords: Set<String> = ["ertele", "otele", "erteler", "ertelesene"]
 
     static func extractOffsets(_ ctx: inout ParseContext) {
@@ -34,10 +36,10 @@ enum DateExtractor {
             var sonra = false
             if duration.unitSuffix.isEmpty && offsetTailWords.contains(nextWord) {
                 end = next
-                sonra = nextWord == "sonra" || nextWord == "sonraya"
+                sonra = sonraTailWords.contains(nextWord)
             } else if Lexicon.dative.contains(duration.unitSuffix) && !duration.unitSuffix.isEmpty {
                 end = duration.end
-            } else if Lexicon.ablative.contains(duration.unitSuffix) && nextWord == "sonra" {
+            } else if Lexicon.ablative.contains(duration.unitSuffix) && sonraTailWords.contains(nextWord) {
                 end = next
                 sonra = true
             } else if duration.unitSuffix.isEmpty && snoozeVerbWords.contains(nextWord) {

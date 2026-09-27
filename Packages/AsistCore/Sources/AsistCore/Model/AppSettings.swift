@@ -8,7 +8,10 @@ public struct AppSettings: Codable, Equatable, Hashable {
     public var speakConfirmations: Bool = true               // D18: on a private route (headphones/BT/car) only
     public var speakConfirmationsOnSpeaker: Bool = false     // D18: also through the loudspeaker
     public var ttsRate: TTSRate = .normal
-    public var autoSaveSeconds: Int = 4                      // 0 = kapalı; allowed 0, 3, 4, 6
+    public var autoSaveSeconds: Int = 12                     // 0 = kapalı; allowed: autoSaveChoices
+    /// Selectable auto-save countdowns in seconds (0 = kapalı). Device feedback 2026-09-27: 3–6 s was too short
+    /// to read the card; old stored values migrate to the default 12 s while decoding.
+    public static let autoSaveChoices: [Int] = [0, 8, 12, 20, 30]
     public var noTimeBehavior: NoTimeBehavior = .ask
     // Parser time words
     public var defaultDayTime = ClockTime(9, 0)
@@ -112,7 +115,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
         speakConfirmationsOnSpeaker = c.lenient(Bool.self, forKey: .speakConfirmationsOnSpeaker, default: speakConfirmationsOnSpeaker)
         ttsRate = c.lenient(TTSRate.self, forKey: .ttsRate, default: ttsRate)
         let rawAutoSave = c.lenient(Int.self, forKey: .autoSaveSeconds, default: autoSaveSeconds)
-        autoSaveSeconds = [0, 3, 4, 6].contains(rawAutoSave) ? rawAutoSave : 4
+        autoSaveSeconds = AppSettings.autoSaveChoices.contains(rawAutoSave) ? rawAutoSave : 12
         noTimeBehavior = c.lenient(NoTimeBehavior.self, forKey: .noTimeBehavior, default: noTimeBehavior)
         defaultDayTime = c.lenient(ClockTime.self, forKey: .defaultDayTime, default: defaultDayTime)
         sabah = c.lenient(ClockTime.self, forKey: .sabah, default: sabah)

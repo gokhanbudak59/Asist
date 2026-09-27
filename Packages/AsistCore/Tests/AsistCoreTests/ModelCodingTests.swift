@@ -98,7 +98,7 @@ final class ModelCodingTests: XCTestCase {
     private func fullSettings() -> AppSettings {
         var settings = AppSettings()
         settings.userName = "Gökhan"
-        settings.autoSaveSeconds = 6
+        settings.autoSaveSeconds = 20
         settings.workdays = [1, 2, 3, 4, 5, 6]
         settings.workStart = ClockTime(8, 0)
         settings.profileForNormal = .israrci
@@ -407,7 +407,7 @@ final class ModelCodingTests: XCTestCase {
         }
         """
         let settings = try decode(AppSettings.self, json)
-        XCTAssertEqual(settings.autoSaveSeconds, 4)
+        XCTAssertEqual(settings.autoSaveSeconds, 12)
         XCTAssertEqual(settings.workdays, [1, 2, 3, 4, 5])
         XCTAssertEqual(settings.waitingDefaultWorkdays, 10)
         XCTAssertEqual(settings.eventDefaultLeadMinutes, 0)

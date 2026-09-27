@@ -45,9 +45,10 @@ struct GeneralSettingsView: View {
             Section {
                 Picker("Otomatik kaydet", selection: $s.autoSaveSeconds) {
                     Text("Kapalı").tag(0)
-                    Text("3 sn").tag(3)
-                    Text("4 sn").tag(4)
-                    Text("6 sn").tag(6)
+                    Text("8 sn").tag(8)
+                    Text("12 sn").tag(12)
+                    Text("20 sn").tag(20)
+                    Text("30 sn").tag(30)
                 }
                 Picker("Zaman hiç söylenmezse", selection: $s.noTimeBehavior) {
                     Text("Sor").tag(NoTimeBehavior.ask)

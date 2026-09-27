@@ -57,13 +57,13 @@ final class CaptureDraft: Identifiable {
     private(set) var smartLevel: ConfirmationLevel? = nil
     /// Incremented by every `applySmart` so the sheet re-syncs its local text fields.
     private(set) var smartRevision: Int = 0
-    /// `AppSettings.autoSaveSeconds` at the moment the card was created (clamped 0…10).
+    /// `AppSettings.autoSaveSeconds` at the moment the card was created (clamped 0…30).
     let autoSaveSetting: Int
     /// Moment the card was created.
     let createdAt: Date
 
     init(heardText: String, source: CaptureSource, parse: ParseResult, proposal: CaptureProposal, autoSaveSeconds: Int) {
-        let clampedSetting = min(10, max(0, autoSaveSeconds))
+        let clampedSetting = min(30, max(0, autoSaveSeconds))
         let seconds = CaptureDraft.countdown(level: proposal.level, needsTime: proposal.needsTime,
                                              autoSaveSeconds: clampedSetting)
         self.id = UUID()
@@ -146,7 +146,7 @@ final class CaptureDraft: Identifiable {
         case .autoSave:
             return autoSaveSeconds
         case .confirm:
-            return max(6, autoSaveSeconds)
+            return autoSaveSeconds + 5              // medium confidence: a little longer to read
         case .review:
             return 0
         }
