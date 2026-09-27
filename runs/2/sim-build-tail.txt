@@ -1,0 +1,150 @@
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/Store/StoreFiles.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/UI/Settings/SummarySettingsView.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/Voice/SystemVolumeAnchor.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/UI/Settings/TimeSettingsView.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/Services/ToastCenter.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/UI/Components/ToastHost.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/UI/Today/TodayHeader.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/UI/Today/TodayView.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/UI/DesignSystem/Tokens.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/UI/Settings/TriggerSettingsView.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/Voice/VoiceCoordinator.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/Voice/VoicePermissions.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 App/Voice/VolumeButtonTrigger.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftCompile normal arm64 Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/DerivedSources/GeneratedAssetSymbols.swift (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    
+
+SwiftMergeGeneratedHeaders Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/DerivedSources/Asist-Swift.h Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist-Swift.h (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    builtin-swiftHeaderTool -arch arm64 Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist-Swift.h -o Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/DerivedSources/Asist-Swift.h
+
+SwiftDriverJobDiscovery normal arm64 Compiling MainTabView.swift, MatchConfirmationSheet.swift, MicButton.swift, MuteMenu.swift, NagSettingsView.swift, NotificationCategories.swift, NotificationCoordinator.swift, NotificationRequestFactory.swift, NotificationScheduler.swift, OnboardingView.swift, PermissionCenter.swift, PrimaryButton.swift, PriorityBadge.swift, ProjectDetailView.swift, ProjectEditorSheet.swift, ProjectsView.swift, RecentlyDeletedView.swift, ReminderEngine.swift, RootView.swift, RouteDestination.swift, SectionHeader.swift, SettingsView.swift (in target 'Asist' from project 'Asist')
+
+Copy Build/Products/Debug-iphonesimulator/Asist.swiftmodule/arm64-apple-ios-simulator.swiftmodule Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.swiftmodule (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.swiftmodule Build/Products/Debug-iphonesimulator/Asist.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+Copy Build/Products/Debug-iphonesimulator/Asist.swiftmodule/arm64-apple-ios-simulator.swiftdoc Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.swiftdoc (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.swiftdoc Build/Products/Debug-iphonesimulator/Asist.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy Build/Products/Debug-iphonesimulator/Asist.swiftmodule/arm64-apple-ios-simulator.abi.json Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.abi.json (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.abi.json Build/Products/Debug-iphonesimulator/Asist.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy Build/Products/Debug-iphonesimulator/Asist.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.swiftsourceinfo (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.swiftsourceinfo Build/Products/Debug-iphonesimulator/Asist.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftDriverJobDiscovery normal arm64 Compiling SheetHost.swift, SigningMonitor.swift, SmartModeClient.swift, SmartModeSettingsView.swift, SnoozeGrid.swift, SnoozeOptions.swift, Speaker.swift, SpeechListener.swift, StoreFiles.swift, SummarySettingsView.swift, SystemVolumeAnchor.swift, TimeSettingsView.swift, ToastCenter.swift, ToastHost.swift, TodayHeader.swift, TodayView.swift, Tokens.swift, TriggerSettingsView.swift, VoiceCoordinator.swift, VoicePermissions.swift, VolumeButtonTrigger.swift, GeneratedAssetSymbols.swift (in target 'Asist' from project 'Asist')
+
+SwiftDriverJobDiscovery normal arm64 Compiling ConfirmationSheet.swift, DataSettingsView.swift, DataStore.swift, DateTimePickerSheet.swift, DiagnosticsView.swift, DinleIntent.swift, EmptyStateView.swift, EndOfDayView.swift, FollowUpMessageSheet.swift, GecikenlerIntent.swift, GeneralSettingsView.swift, GuideView.swift, Haptics.swift, HeroCard.swift, HistorySection.swift, ImportExport.swift, ItemDetailView.swift, ItemRow.swift, KaydetIntent.swift, KeychainStore.swift, ListeningOverlay.swift, ListsView.swift (in target 'Asist' from project 'Asist')
+
+SwiftDriver\ Compilation Asist normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    builtin-Swift-Compilation -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Asist -Onone @Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.SwiftFileList -DDEBUG -DASIST_APP -enable-bare-slash-regex -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I Build/Products/Debug-iphonesimulator -F Build/Products/Debug-iphonesimulator/PackageFrameworks -F Build/Products/Debug-iphonesimulator -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path ModuleCache.noindex -sdk-module-cache-path ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.swiftmodule -validate-clang-modules-once -clang-build-session-file ModuleCache.noindex/Session.modulevalidation -Xcc -IBuild/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/swift-overrides.hmap -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist_const_extract_protocols.json -Xcc -iquote -Xcc Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist-generated-files.hmap -Xcc -IBuild/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist-own-target-headers.hmap -Xcc -IBuild/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist-all-non-framework-target-headers.hmap -Xcc -ivfsoverlay -Xcc Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist-15ff2e36e6393c1ced36a40656b61f5e-VFS-iphonesimulator/all-product-headers.yaml -Xcc -iquote -Xcc Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist-project-headers.hmap -Xcc -IBuild/Products/Debug-iphonesimulator/include -Xcc -IBuild/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/DerivedSources-normal/arm64 -Xcc -IBuild/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/DerivedSources/arm64 -Xcc -IBuild/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/DerivedSources -Xcc -DDEBUG\=1 -emit-objc-header -emit-objc-header-path Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist-Swift.h -working-directory /Users/runner/work/Asist/Asist -experimental-emit-module-separately -disable-cmo
+
+Ld Build/Products/Debug-iphonesimulator/Asist.app/Asist.debug.dylib normal (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -LBuild/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -LBuild/Products/Debug-iphonesimulator -FBuild/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -FBuild/Products/Debug-iphonesimulator/PackageFrameworks -FBuild/Products/Debug-iphonesimulator -filelist Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.LinkFileList -install_name @rpath/Asist.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker Build/Products/Debug-iphonesimulator/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/Frameworks -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.swiftmodule @Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist-linker-args.resp -Wl,-no_warn_duplicate_libraries -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o Build/Products/Debug-iphonesimulator/Asist.app/Asist.debug.dylib -Xlinker -add_ast_path -Xlinker Build/Intermediates.noindex/AsistCore.build/Debug-iphonesimulator/AsistCore.build/Objects-normal/arm64/AsistCore.swiftmodule @Build/Intermediates.noindex/AsistCore.build/Debug-iphonesimulator/AsistCore.build/Objects-normal/arm64/AsistCore-linker-args.resp
+
+ConstructStubExecutorLinkFileList Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist-ExecutorLinkFileList-normal-arm64.txt (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    construct-stub-executor-link-file-list Build/Products/Debug-iphonesimulator/Asist.app/Asist.debug.dylib /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Asist' from project 'Asist')
+
+Ld Build/Products/Debug-iphonesimulator/Asist.app/Asist normal (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -LBuild/Products/Debug-iphonesimulator -FBuild/Products/Debug-iphonesimulator/PackageFrameworks -FBuild/Products/Debug-iphonesimulator -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker Build/Products/Debug-iphonesimulator/PackageFrameworks -Xlinker -rpath -Xlinker @executable_path/Frameworks -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist-ExecutorLinkFileList-normal-arm64.txt Build/Products/Debug-iphonesimulator/Asist.app/Asist.debug.dylib -o Build/Products/Debug-iphonesimulator/Asist.app/Asist
+
+CopySwiftLibs Build/Products/Debug-iphonesimulator/Asist.app (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    builtin-swiftStdLibTool --copy --verbose --scan-executable Build/Products/Debug-iphonesimulator/Asist.app/Asist.debug.dylib --scan-folder Build/Products/Debug-iphonesimulator/Asist.app/Frameworks --scan-folder Build/Products/Debug-iphonesimulator/Asist.app/PlugIns --scan-folder Build/Products/Debug-iphonesimulator/Asist.app/SystemExtensions --scan-folder Build/Products/Debug-iphonesimulator/Asist.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.9GZtTS/Metal.xctoolchain --toolchain /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination Build/Products/Debug-iphonesimulator/Asist.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+Ignoring --strip-bitcode because --sign was not passed
+
+ExtractAppIntentsMetadata (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.9GZtTS/Metal.xctoolchain --module-name Asist --sdk-root /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F113 --platform-family iOS --deployment-target 17.0 --bundle-identifier com.gokhanbudak.asist --output Build/Products/Debug-iphonesimulator/Asist.app --target-triple arm64-apple-ios17.0-simulator --binary-file Build/Products/Debug-iphonesimulator/Asist.app/Asist --dependency-file Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist_dependency_info.dat --stringsdata-file Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.SwiftFileList --metadata-file-list Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist.DependencyMetadataFileList --static-metadata-file-list Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist.DependencyStaticMetadataFileList --swift-const-vals-list Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Objects-normal/arm64/Asist.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents
+2026-09-27 07:48:33.738 appintentsmetadataprocessor[2203:10601] Starting appintentsmetadataprocessor export
+2026-09-27 07:48:33.781 appintentsmetadataprocessor[2203:10601] Writing Metadata.appintents
+2026-09-27 07:48:33.781 appintentsmetadataprocessor[2203:10601] Metadata root: Build/Products/Debug-iphonesimulator/Asist.app/Metadata.appintents
+
+ValidateAppShortcutStringsMetadata (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appshortcutstringsprocessor --source-file App/Resources/tr.lproj/AppShortcuts.strings --input-data-path Build/Products/Debug-iphonesimulator/Asist.app/Metadata.appintents --platform-family iOS --deployment-target 17.0 --validate-assistant-intents --metadata-file-list Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist.DependencyMetadataFileList
+
+AppIntentsSSUTraining (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path Build/Products/Debug-iphonesimulator/Asist.app/Info.plist --temp-dir-path Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/ssu --bundle-id com.gokhanbudak.asist --product-path Build/Products/Debug-iphonesimulator/Asist.app --extracted-metadata-path Build/Products/Debug-iphonesimulator/Asist.app/Metadata.appintents --metadata-file-list Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/Asist.DependencyMetadataFileList --source-file Build/Products/Debug-iphonesimulator/Asist.app/Info.plist --source-file App/Resources/tr.lproj/AppShortcuts.strings --archive-ssu-assets
+2026-09-27 07:48:33.847 appintentsnltrainingprocessor[2205:10606] Parsing options for appintentsnltrainingprocessor
+2026-09-27 07:48:33.848 appintentsnltrainingprocessor[2205:10606] Starting AppIntents SSU YAML Generation
+2026-09-27 07:48:33.869 appintentsnltrainingprocessor[2205:10606] Training '${+applicationName}'e kaydet|${+applicationName}'e ekle|${+applicationName} kaydet|${+applicationName}'e not al|${+applicationName} hatırlat' for tr
+2026-09-27 07:48:33.869 appintentsnltrainingprocessor[2205:10606] Training '${+applicationName} dinle|${+applicationName} beni dinle|${+applicationName} ile konuş' for tr
+2026-09-27 07:48:33.870 appintentsnltrainingprocessor[2205:10606] Training '${+applicationName} bugün ne var|${+applicationName} bugün neler var|${+applicationName}'te bugün ne var|${+applicationName} gündem' for tr
+2026-09-27 07:48:33.870 appintentsnltrainingprocessor[2205:10606] Training '${+applicationName} gecikenler|${+applicationName} neyi unuttum' for tr
+2026-09-27 07:48:33.870 appintentsnltrainingprocessor[2205:10606] Training Negative Phrases '' for tr
+2026-09-27 07:48:33.870 appintentsnltrainingprocessor[2205:10606] Application name 'Asist' for tr
+2026-09-27 07:48:33.882 appintentsnltrainingprocessor[2205:10606] Generated AppIntents SSU YAML files in file://Build/Intermediates.noindex/Asist.build/Debug-iphonesimulator/Asist.build/ssu/
+2026-09-27 07:48:33.883 appintentsnltrainingprocessor[2205:10606] Copied AppIntents SSU YAML files to file://Build/Products/Debug-iphonesimulator/Asist.app/Metadata.appintents/
+Archiving all locales.
+[------------------------------------------------------------] 0% archiving tr[🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢] 100% archived tr[🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢🁢] 100% archived 1 localesBuild/Products/Debug-iphonesimulator/Asist.app/tr.lproj/nlu.appintents
+Build/Products/Debug-iphonesimulator/Asist.app/tr.lproj/nlu.appintents/bf91c76f3585f4a013d548a2dcf4adc6.version
+
+
+RegisterExecutionPolicyException Build/Products/Debug-iphonesimulator/Asist.app (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    builtin-RegisterExecutionPolicyException Build/Products/Debug-iphonesimulator/Asist.app
+
+Validate Build/Products/Debug-iphonesimulator/Asist.app (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    builtin-validationUtility Build/Products/Debug-iphonesimulator/Asist.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch Build/Products/Debug-iphonesimulator/Asist.app (in target 'Asist' from project 'Asist')
+    cd /Users/runner/work/Asist/Asist
+    /usr/bin/touch -c Build/Products/Debug-iphonesimulator/Asist.app
+
+** BUILD SUCCEEDED **
+

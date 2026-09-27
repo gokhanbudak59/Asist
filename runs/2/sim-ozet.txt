@@ -1,0 +1,5 @@
+Simülatör: iPhone 14 Pro Max — iOS 26.5 (udid 9E348055-284F-4023-BFE5-E14575E75AE7)
+Tohum: 18 satır, ayrıntı kaydı: 5EED0001-0000-4000-8000-000000000014
+Bugün ekranı: geciken=2, emin olamadıklarım=1, bugün=6, takip=1, yaklaşan=5, zamanı belirsiz=1, bu hafta biten=1
+Tohum verisi yüklendi
+Sonuç: BAŞARILI (ekran görüntüsü: 11, çökme raporu: 0, betik kodu: 0)

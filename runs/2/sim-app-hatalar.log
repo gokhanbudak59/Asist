@@ -1,0 +1,9 @@
+getpwuid_r did not find a match for uid 501
+Timestamp               Ty Process[PID:TID]
+2026-09-27 07:55:41.305 E  Asist[14143:aeac] [com.apple.appintents:General] Failed to connect to linkd to request update AppShortcut parameters, error: Yardımcı uygulamayla iletişim kurulamadı.
+2026-09-27 07:55:42.641 E  Asist[14143:aeac] [com.apple.app_launch_measurement:General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-09-27 07:55:43.243 E  Asist[14143:ae9c] [com.apple.CFBundle:plugin] AddInstanceForFactory: No factory registered for id <CFUUID 0x11347b620> F8BB1C28-BAE8-11D6-9C31-00039315CD46
+2026-09-27 07:55:43.487 E  Asist[14143:aeac] [com.apple.app_launch_measurement:General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+2026-09-27 07:58:08.845 E  Asist[17649:d684] [com.apple.appintents:General] Failed to connect to linkd to request update AppShortcut parameters, error: Yardımcı uygulamayla iletişim kurulamadı.
+2026-09-27 07:58:11.425 E  Asist[17649:d68d] [com.apple.app_launch_measurement:General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-09-27 07:58:11.527 E  Asist[17649:d684] [com.apple.app_launch_measurement:General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics

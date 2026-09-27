@@ -1,0 +1,5 @@
+getpwuid_r did not find a match for uid 501
+Timestamp               Ty Process[PID:TID]
+2026-09-27 07:58:08.694 I  Asist[17649:d673] [com.gokhanbudak.asist:app] embedded.mobileprovision okunamadı (imzasız/ad-hoc kurulum): imza uyarıları planlanmaz
+2026-09-27 07:58:08.718 I  Asist[17649:d673] [com.gokhanbudak.asist:store] Veri yüklendi: kaynak=ilk açılış, kayıt=0, proje=0, şema=1, writerBuild=0, build=2, temizlenen=0, sorun=yok
+2026-09-27 07:58:11.767 I  Asist[17649:d673] [com.gokhanbudak.asist:notif] reconcile data.all+launch: bildirim izni yok, planlama yapılmadı

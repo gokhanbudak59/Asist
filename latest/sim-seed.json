@@ -1,0 +1,869 @@
+{
+  "items" : [
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T06:20:00Z",
+      "dueDate" : "2026-09-27T06:25:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-27T06:20:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000001",
+      "isEvent" : false,
+      "kind" : "reminder",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "çok acil Ahmet Bey'i hemen ara",
+      "parseConfidence" : 0.9,
+      "person" : "Ahmet Bey",
+      "priority" : 3,
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Ahmet Bey'i ara",
+      "updatedAt" : "2026-09-27T06:20:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T03:55:00Z",
+      "dueDate" : "2026-09-27T06:55:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-27T03:55:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000002",
+      "isEvent" : false,
+      "kind" : "reminder",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "önemli: 3 saat sonra Hat 3 servo parametrelerini yedekle",
+      "parseConfidence" : 0.9,
+      "priority" : 2,
+      "projectID" : "5EED0002-0000-4000-8000-000000000002",
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "keyboard",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Hat 3 servo parametrelerini yedekle",
+      "updatedAt" : "2026-09-27T03:55:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T06:15:00Z",
+      "dueDate" : "2026-09-27T06:45:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-27T06:15:00Z",
+          "event" : "created"
+        },
+        {
+          "date" : "2026-09-27T07:25:00Z",
+          "detail" : "27 Eyl 07:40",
+          "event" : "snoozed"
+        },
+        {
+          "date" : "2026-09-27T07:40:00Z",
+          "detail" : "27 Eyl 08:20",
+          "event" : "snoozed"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000003",
+      "isEvent" : false,
+      "kind" : "reminder",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "yarım saat sonra arka cep hattında pnömatik kaçağı kontrol et",
+      "parseConfidence" : 0.9,
+      "priority" : 1,
+      "projectID" : "5EED0002-0000-4000-8000-000000000001",
+      "smartModeUsed" : false,
+      "snoozeCount" : 2,
+      "snoozedUntil" : "2026-09-27T08:20:00Z",
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Arka cep hattında pnömatik kaçağı kontrol et",
+      "updatedAt" : "2026-09-27T07:40:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T07:45:00Z",
+      "dueDate" : "2026-09-27T09:45:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-27T07:45:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000004",
+      "isEvent" : false,
+      "kind" : "reminder",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "2 saat sonra Mehmet Bey'i ara",
+      "parseConfidence" : 0.9,
+      "person" : "Mehmet Bey",
+      "priority" : 1,
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Mehmet Bey'i ara",
+      "updatedAt" : "2026-09-27T07:45:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T07:35:00Z",
+      "dueDate" : "2026-09-27T11:35:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-27T07:35:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000005",
+      "isEvent" : true,
+      "kind" : "reminder",
+      "leadTimesMinutes" : [
+        15
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "4 saat sonra Kaynak Robotu bakım toplantısı",
+      "parseConfidence" : 0.9,
+      "priority" : 1,
+      "projectID" : "5EED0002-0000-4000-8000-000000000003",
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Kaynak Robotu bakım toplantısı",
+      "updatedAt" : "2026-09-27T07:35:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T07:53:00Z",
+      "dueDate" : "2026-09-27T08:00:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-27T07:53:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000006",
+      "isEvent" : false,
+      "kind" : "reminder",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "her gün saat 8'de günlük üretim raporunu kontrol et",
+      "parseConfidence" : 0.9,
+      "priority" : 1,
+      "recurrence" : {
+        "frequency" : "daily",
+        "interval" : 1
+      },
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Günlük üretim raporunu kontrol et",
+      "updatedAt" : "2026-09-27T07:53:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-26T07:55:00Z",
+      "dueDate" : "2026-09-27T16:00:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-26T07:55:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000007",
+      "isEvent" : false,
+      "kind" : "waiting",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "Ayşe Hanım'dan fiyat listesini bekliyorum yarın takip et",
+      "parseConfidence" : 0.95,
+      "person" : "Ayşe Hanım",
+      "priority" : 1,
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Fiyat listesi",
+      "updatedAt" : "2026-09-26T07:55:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T07:25:00Z",
+      "dueDate" : "2026-10-02T15:00:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-27T07:25:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000008",
+      "isEvent" : false,
+      "kind" : "waiting",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "Burak'tan cuma 3'e kadar test sonuçlarını bekliyorum",
+      "parseConfidence" : 0.9,
+      "person" : "Burak",
+      "priority" : 1,
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Test sonuçları",
+      "updatedAt" : "2026-09-27T07:25:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-26T05:55:00Z",
+      "hasTime" : false,
+      "history" : [
+        {
+          "date" : "2026-09-26T05:55:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000009",
+      "isEvent" : false,
+      "kind" : "note",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "Hat 3 robot hücresinde kapı sensörü gevşek",
+      "originalText" : "not al Hat 3 robot hücresinde kapı sensörü gevşek",
+      "parseConfidence" : 1,
+      "priority" : 1,
+      "projectID" : "5EED0002-0000-4000-8000-000000000002",
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Hat 3 robot hücresinde kapı sensörü gevşek",
+      "updatedAt" : "2026-09-26T05:55:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-25T05:55:00Z",
+      "hasTime" : false,
+      "history" : [
+        {
+          "date" : "2026-09-25T05:55:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000010",
+      "isEvent" : false,
+      "kind" : "note",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "Arka Cep müşterisi ekim sonunda kabul istiyor",
+      "originalText" : "not et Arka Cep müşterisi ekim sonunda kabul istiyor",
+      "parseConfidence" : 1,
+      "priority" : 1,
+      "projectID" : "5EED0002-0000-4000-8000-000000000001",
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Arka Cep müşterisi ekim sonunda kabul istiyor",
+      "updatedAt" : "2026-09-25T05:55:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T07:50:00Z",
+      "dueDate" : "2026-09-28T15:00:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-27T07:50:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000011",
+      "isEvent" : false,
+      "kind" : "task",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "görev: yarın 3'te Ahmet'le Hat 3 bütçesini konuş",
+      "parseConfidence" : 0.95,
+      "person" : "Ahmet",
+      "priority" : 1,
+      "projectID" : "5EED0002-0000-4000-8000-000000000002",
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "keyboard",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Ahmet'le Hat 3 bütçesini konuş",
+      "updatedAt" : "2026-09-27T07:50:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T07:52:00Z",
+      "dueDate" : "2026-09-27T09:00:00Z",
+      "hasTime" : false,
+      "history" : [
+        {
+          "date" : "2026-09-27T07:52:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000012",
+      "isEvent" : false,
+      "kind" : "task",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "görev ekle Hat 3 HMI ekranlarını güncelle",
+      "parseConfidence" : 1,
+      "priority" : 1,
+      "projectID" : "5EED0002-0000-4000-8000-000000000002",
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Hat 3 HMI ekranlarını güncelle",
+      "updatedAt" : "2026-09-27T07:52:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-26T01:55:00Z",
+      "hasTime" : false,
+      "history" : [
+        {
+          "date" : "2026-09-26T01:55:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000013",
+      "isEvent" : false,
+      "kind" : "task",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "yapılacaklara ekle PLC lisanslarını yenile",
+      "parseConfidence" : 1,
+      "priority" : 1,
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "keyboard",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "PLC lisanslarını yenile",
+      "updatedAt" : "2026-09-26T01:55:00Z"
+    },
+    {
+      "checklist" : [
+        {
+          "done" : true,
+          "id" : "5EED0003-0000-4000-8000-000000001401",
+          "text" : "Test prosedürü müşteriye gönderildi ve onaylandı"
+        },
+        {
+          "done" : true,
+          "id" : "5EED0003-0000-4000-8000-000000001402",
+          "text" : "Katılımcılar ve tarih teyit edildi"
+        },
+        {
+          "done" : true,
+          "id" : "5EED0003-0000-4000-8000-000000001403",
+          "text" : "I\/O listesi ve test kayıt formları hazır"
+        },
+        {
+          "done" : false,
+          "id" : "5EED0003-0000-4000-8000-000000001404",
+          "text" : "PLC\/HMI\/robot program yedekleri alındı (sürüm etiketli)"
+        },
+        {
+          "done" : false,
+          "id" : "5EED0003-0000-4000-8000-000000001405",
+          "text" : "Safety fonksiyon testleri planlandı"
+        },
+        {
+          "done" : false,
+          "id" : "5EED0003-0000-4000-8000-000000001406",
+          "text" : "Eksik listesi (punch list) şablonu hazır"
+        },
+        {
+          "done" : false,
+          "id" : "5EED0003-0000-4000-8000-000000001407",
+          "text" : "Test sonrası tutanak imzalandı"
+        }
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T03:55:00Z",
+      "dueDate" : "2026-10-02T09:00:00Z",
+      "hasTime" : false,
+      "history" : [
+        {
+          "date" : "2026-09-27T03:55:00Z",
+          "event" : "created"
+        },
+        {
+          "date" : "2026-09-27T07:25:00Z",
+          "detail" : "Kontrol listesi: FAT (Fabrika Kabul Testi)",
+          "event" : "edited"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000014",
+      "isEvent" : false,
+      "kind" : "task",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "görev: cuma günü Arka Cep FAT hazırlığını tamamla",
+      "parseConfidence" : 1,
+      "priority" : 1,
+      "projectID" : "5EED0002-0000-4000-8000-000000000001",
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Arka Cep FAT hazırlığını tamamla",
+      "updatedAt" : "2026-09-27T07:25:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T07:40:00Z",
+      "dueDate" : "2026-09-28T08:00:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-27T07:40:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000015",
+      "isEvent" : true,
+      "kind" : "reminder",
+      "leadTimesMinutes" : [
+        15
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "sakın unutma yarın 8'de tedarikçi denetimi var",
+      "parseConfidence" : 1,
+      "priority" : 3,
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Tedarikçi denetimi var",
+      "updatedAt" : "2026-09-27T07:40:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T06:55:00Z",
+      "dueDate" : "2026-09-28T10:00:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-27T06:55:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000016",
+      "isEvent" : false,
+      "kind" : "reminder",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "önemli: yarın 10'da bütçe onayı",
+      "parseConfidence" : 0.9,
+      "priority" : 2,
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "keyboard",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Bütçe onayı",
+      "updatedAt" : "2026-09-27T06:55:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedAt" : "2026-09-27T04:35:00Z",
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T02:55:00Z",
+      "dueDate" : "2026-09-27T03:55:00Z",
+      "hasTime" : true,
+      "history" : [
+        {
+          "date" : "2026-09-27T02:55:00Z",
+          "event" : "created"
+        },
+        {
+          "date" : "2026-09-27T04:35:00Z",
+          "event" : "done"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000017",
+      "isEvent" : false,
+      "kind" : "reminder",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : false,
+      "notes" : "",
+      "originalText" : "1 saat sonra Kaynak Robotu torç temizliğini kontrol et",
+      "parseConfidence" : 0.9,
+      "priority" : 1,
+      "projectID" : "5EED0002-0000-4000-8000-000000000003",
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "voice",
+      "status" : "done",
+      "tags" : [
+
+      ],
+      "title" : "Kaynak Robotu torç temizliğini kontrol et",
+      "updatedAt" : "2026-09-27T04:35:00Z"
+    },
+    {
+      "checklist" : [
+
+      ],
+      "completedOccurrences" : 0,
+      "createdAt" : "2026-09-27T07:10:00Z",
+      "dueDate" : "2026-09-27T09:00:00Z",
+      "hasTime" : false,
+      "history" : [
+        {
+          "date" : "2026-09-27T07:10:00Z",
+          "event" : "created"
+        }
+      ],
+      "id" : "5EED0001-0000-4000-8000-000000000018",
+      "isEvent" : false,
+      "kind" : "task",
+      "leadTimesMinutes" : [
+
+      ],
+      "needsReview" : true,
+      "notes" : "",
+      "originalText" : "Arka Cep sevkiyat evrakları",
+      "parseConfidence" : 0.55,
+      "priority" : 1,
+      "projectID" : "5EED0002-0000-4000-8000-000000000001",
+      "smartModeUsed" : false,
+      "snoozeCount" : 0,
+      "source" : "siri",
+      "status" : "open",
+      "tags" : [
+
+      ],
+      "title" : "Arka Cep sevkiyat evrakları",
+      "updatedAt" : "2026-09-27T07:10:00Z"
+    }
+  ],
+  "meta" : {
+    "createdAt" : "2026-09-06T07:55:00Z",
+    "dismissedBanners" : {
+
+    },
+    "installDate" : "2026-09-25T07:55:00Z",
+    "lastDroppedCount" : 0,
+    "lastPlannedCount" : 0,
+    "lastSavedAt" : "2026-09-27T07:55:00Z",
+    "writerBuild" : 0
+  },
+  "places" : [
+
+  ],
+  "projects" : [
+    {
+      "aliases" : [
+        "Arka Cep Ağzı Kapama"
+      ],
+      "archived" : false,
+      "color" : "blue",
+      "createdAt" : "2026-09-06T07:55:00Z",
+      "id" : "5EED0002-0000-4000-8000-000000000001",
+      "name" : "Arka Cep",
+      "updatedAt" : "2026-09-06T07:55:00Z"
+    },
+    {
+      "aliases" : [
+        "Üçüncü hat"
+      ],
+      "archived" : false,
+      "color" : "orange",
+      "createdAt" : "2026-09-06T07:55:00Z",
+      "id" : "5EED0002-0000-4000-8000-000000000002",
+      "name" : "Hat 3",
+      "updatedAt" : "2026-09-06T07:55:00Z"
+    },
+    {
+      "aliases" : [
+        "Kaynak hücresi"
+      ],
+      "archived" : false,
+      "color" : "purple",
+      "createdAt" : "2026-09-06T07:55:00Z",
+      "id" : "5EED0002-0000-4000-8000-000000000003",
+      "name" : "Kaynak Robotu",
+      "updatedAt" : "2026-09-06T07:55:00Z"
+    }
+  ],
+  "schemaVersion" : 1,
+  "settings" : {
+    "aksam" : {
+      "hour" : 19,
+      "minute" : 0
+    },
+    "aksamustu" : {
+      "hour" : 17,
+      "minute" : 0
+    },
+    "ambiguousHoursPM" : true,
+    "autoSaveSeconds" : 4,
+    "backupReminderEnabled" : true,
+    "backupReminderTime" : {
+      "hour" : 20,
+      "minute" : 0
+    },
+    "backupReminderWeekday" : 7,
+    "badgeMode" : "overdue",
+    "briefingEnabled" : true,
+    "briefingTapSpeaks" : false,
+    "briefingTime" : {
+      "hour" : 8,
+      "minute" : 0
+    },
+    "briefingWhenEmpty" : false,
+    "briefingWorkdaysOnly" : true,
+    "criticalIgnoresQuietHours" : false,
+    "defaultDayTime" : {
+      "hour" : 9,
+      "minute" : 0
+    },
+    "endOfDayEnabled" : true,
+    "endOfDayTime" : {
+      "hour" : 17,
+      "minute" : 45
+    },
+    "endOfDayWorkdaysOnly" : true,
+    "eventDefaultLeadMinutes" : 15,
+    "followUpAskTime" : {
+      "hour" : 16,
+      "minute" : 0
+    },
+    "gece" : {
+      "hour" : 22,
+      "minute" : 0
+    },
+    "lockScreenShowsContent" : true,
+    "moveSkipsWeekend" : true,
+    "noTimeBehavior" : "ask",
+    "offDayStart" : {
+      "hour" : 9,
+      "minute" : 0
+    },
+    "ogle" : {
+      "hour" : 12,
+      "minute" : 0
+    },
+    "ogledenOnce" : {
+      "hour" : 11,
+      "minute" : 0
+    },
+    "ogledenSonra" : {
+      "hour" : 14,
+      "minute" : 0
+    },
+    "onDeviceRecognitionOnly" : false,
+    "onboardingCompleted" : true,
+    "profileForCritical" : "birakmaz",
+    "profileForHigh" : "israrci",
+    "profileForLow" : "nazik",
+    "profileForNormal" : "nazik",
+    "quietEnd" : {
+      "hour" : 7,
+      "minute" : 30
+    },
+    "quietStart" : {
+      "hour" : 22,
+      "minute" : 30
+    },
+    "restoreVolumeAfterTrigger" : true,
+    "sabah" : {
+      "hour" : 9,
+      "minute" : 0
+    },
+    "silenceSeconds" : 1.8,
+    "smartModeAutoOnLowConfidence" : true,
+    "smartModeEnabled" : false,
+    "smartModeModel" : "claude-opus-5",
+    "speakConfirmations" : true,
+    "speakConfirmationsOnSpeaker" : false,
+    "ttsRate" : "normal",
+    "userName" : "Gökhan",
+    "volumeTriggerEnabled" : true,
+    "waitingDefaultTime" : {
+      "hour" : 10,
+      "minute" : 0
+    },
+    "waitingDefaultWorkdays" : 2,
+    "workEnd" : {
+      "hour" : 18,
+      "minute" : 0
+    },
+    "workStart" : {
+      "hour" : 8,
+      "minute" : 30
+    },
+    "workdays" : [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  }
+}
