@@ -267,7 +267,8 @@
    "now": "sun",
    "input": "haftaya salı Hat 3 revizyon toplantısı",
    "tags": [
-    "haftaya-W"
+    "haftaya-W",
+    "P2"
    ],
    "expected": {
     "kind": "reminder",
@@ -279,7 +280,7 @@
     "project": "Hat 3",
     "place": null,
     "command": null,
-    "minConfidence": 0.85
+    "minConfidence": 0.75
    }
   },
   {
@@ -1353,6 +1354,29 @@
    }
   },
   {
+   "id": "wd-066",
+   "now": "sun",
+   "input": "24 volt beslemeyi yarın 2'de ölç",
+   "tags": [
+    "units",
+    "pm-rule",
+    "G11",
+    "05b-6.3"
+   ],
+   "expected": {
+    "kind": "reminder",
+    "title": "24 volt beslemeyi ölç",
+    "due": "2026-09-28T14:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
    "id": "rel-001",
    "now": "sun",
    "input": "10 dakika sonra çayı ocaktan almayı hatırlat",
@@ -1900,12 +1924,13 @@
    "input": "öğlen yemekten sonra ilacını al",
    "tags": [
     "daypart",
-    "sonra-without-number"
+    "sonra-without-number",
+    "P5"
    ],
    "expected": {
     "kind": "reminder",
-    "title": "Yemekten sonra ilacını al",
-    "due": "2026-09-27T12:00",
+    "title": "İlacını al",
+    "due": "2026-09-27T13:00",
     "recurrence": null,
     "priority": "normal",
     "person": null,
@@ -2147,6 +2172,76 @@
    }
   },
   {
+   "id": "dp-017",
+   "now": "sun",
+   "input": "cuma akşamı yedeklemeyi kontrol et",
+   "tags": [
+    "daypart",
+    "possessive-daypart",
+    "G7",
+    "05b-6.3"
+   ],
+   "expected": {
+    "kind": "reminder",
+    "title": "Yedeklemeyi kontrol et",
+    "due": "2026-10-02T19:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "dp-018",
+   "now": "sun",
+   "input": "yarın öğlen arası Hakan'ı ara",
+   "tags": [
+    "daypart",
+    "ogle-arasi",
+    "G7",
+    "05b-6.3"
+   ],
+   "expected": {
+    "kind": "reminder",
+    "title": "Hakan'ı ara",
+    "due": "2026-09-28T12:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Hakan",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "dp-019",
+   "now": "sun",
+   "input": "cuma mesai bitimine kadar raporu teslim et",
+   "tags": [
+    "daypart",
+    "mesai-bitimi",
+    "deadline-kadar",
+    "G7",
+    "05b-6.3"
+   ],
+   "expected": {
+    "kind": "reminder",
+    "title": "Raporu teslim et",
+    "due": "2026-10-02T17:30",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
    "id": "day-001",
    "now": "sun",
    "input": "bugün teklifi göndermeyi hatırlat",
@@ -2282,12 +2377,13 @@
    "now": "sun",
    "input": "haftaya dişçi randevusu",
    "tags": [
-    "haftaya-alone"
+    "haftaya-alone",
+    "P1"
    ],
    "expected": {
     "kind": "reminder",
     "title": "Dişçi randevusu",
-    "due": "2026-10-04T09:00",
+    "due": "2026-09-28T09:00",
     "recurrence": null,
     "priority": "normal",
     "person": null,
@@ -2302,12 +2398,13 @@
    "now": "sun",
    "input": "gelecek hafta müşteri ziyareti planla",
    "tags": [
-    "vague"
+    "vague",
+    "P1"
    ],
    "expected": {
     "kind": "reminder",
     "title": "Müşteri ziyareti planla",
-    "due": "2026-10-04T09:00",
+    "due": "2026-09-28T09:00",
     "recurrence": null,
     "priority": "normal",
     "person": null,
@@ -4202,14 +4299,15 @@
    "input": "acil yarın 9'da Kaynak Robotu servis çağrısını takip et",
    "tags": [
     "priority",
-    "takip"
+    "takip",
+    "C2"
    ],
    "expected": {
     "kind": "waiting",
     "title": "Kaynak Robotu servis çağrısı",
     "due": "2026-09-28T09:00",
     "recurrence": null,
-    "priority": "critical",
+    "priority": "high",
     "person": null,
     "project": "Kaynak Robotu",
     "place": null,
@@ -4226,13 +4324,16 @@
     "title": "Müşteri sunumu",
     "due": "2026-10-02T14:00",
     "recurrence": null,
-    "priority": "critical",
+    "priority": "high",
     "person": null,
     "project": null,
     "place": null,
     "command": null,
     "minConfidence": 0.8
-   }
+   },
+   "tags": [
+    "C2"
+   ]
   },
   {
    "id": "pri-003",
@@ -4354,12 +4455,14 @@
    "now": "sun",
    "input": "çok acil Ahmet Bey'i hemen ara",
    "tags": [
-    "hemen-filler"
+    "hemen-filler",
+    "P6",
+    "G9"
    ],
    "expected": {
-    "kind": "task",
+    "kind": "reminder",
     "title": "Ahmet Bey'i ara",
-    "due": null,
+    "due": "2026-09-27T10:35",
     "recurrence": null,
     "priority": "critical",
     "person": "Ahmet Bey",
@@ -4772,7 +4875,7 @@
    "expected": {
     "kind": "reminder",
     "title": "Kaynak Robotu'nun torç temizliğini yap",
-    "due": "2026-10-04T09:00",
+    "due": "2026-09-28T09:00",
     "recurrence": null,
     "priority": "normal",
     "person": null,
@@ -4780,7 +4883,10 @@
     "place": null,
     "command": null,
     "minConfidence": 0.85
-   }
+   },
+   "tags": [
+    "P1"
+   ]
   },
   {
    "id": "pla-001",
@@ -5314,6 +5420,51 @@
     "place": null,
     "command": null,
     "minConfidence": 0.65
+   }
+  },
+  {
+   "id": "tsk-018",
+   "now": "sun",
+   "input": "Ahmet'e sor sürücüler geldi mi",
+   "tags": [
+    "task",
+    "embedded-question",
+    "not-complete",
+    "05b-6.3"
+   ],
+   "expected": {
+    "kind": "task",
+    "title": "Ahmet'e sor sürücüler geldi mi",
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Ahmet",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.75
+   }
+  },
+  {
+   "id": "tsk-019",
+   "now": "sun",
+   "input": "Mehmet'i ara, sipariş durumunu sor",
+   "tags": [
+    "task",
+    "comma-no-multiple-items",
+    "05b-6.3"
+   ],
+   "expected": {
+    "kind": "task",
+    "title": "Mehmet'i ara sipariş durumunu sor",
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Mehmet",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
    }
   },
   {
@@ -6215,6 +6366,31 @@
      "type": "query",
      "scope": "date",
      "date": "2027-01-01"
+    },
+    "minConfidence": 0.9
+   }
+  },
+  {
+   "id": "qry-021",
+   "now": "sun",
+   "input": "sırada ne var",
+   "tags": [
+    "query",
+    "today",
+    "05b-6.3"
+   ],
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "query",
+     "scope": "today"
     },
     "minConfidence": 0.9
    }

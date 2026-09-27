@@ -1,4 +1,4 @@
-// WP0 STUB (04 §5.1) — replaced by WP9. `SheetRoute → View` switch (already the final mapping).
+// WP9 (04 §5.1): `SheetRoute → View` switch for the single app-wide sheet (router.sheet).
 import SwiftUI
 
 struct SheetHost: View {

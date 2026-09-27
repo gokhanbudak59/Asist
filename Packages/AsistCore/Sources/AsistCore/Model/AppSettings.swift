@@ -135,10 +135,10 @@ public struct AppSettings: Codable, Equatable, Hashable {
         followUpAskTime = c.lenient(ClockTime.self, forKey: .followUpAskTime, default: followUpAskTime)
         waitingDefaultWorkdays = min(10, max(1, c.lenient(Int.self, forKey: .waitingDefaultWorkdays, default: waitingDefaultWorkdays)))
         waitingDefaultTime = c.lenient(ClockTime.self, forKey: .waitingDefaultTime, default: waitingDefaultTime)
-        profileForLow = AppSettings.selectable(c.lenient(NagProfileKind.self, forKey: .profileForLow, default: profileForLow), fallback: .nazik)
-        profileForNormal = AppSettings.selectable(c.lenient(NagProfileKind.self, forKey: .profileForNormal, default: profileForNormal), fallback: .nazik)
-        profileForHigh = AppSettings.selectable(c.lenient(NagProfileKind.self, forKey: .profileForHigh, default: profileForHigh), fallback: .israrci)
-        profileForCritical = AppSettings.selectable(c.lenient(NagProfileKind.self, forKey: .profileForCritical, default: profileForCritical), fallback: .birakmaz)
+        profileForLow = AppSettings.decodedProfile(c, .profileForLow, fallback: .nazik)   // WP0-FIX: per-field fallback for unknown raw values
+        profileForNormal = AppSettings.decodedProfile(c, .profileForNormal, fallback: .nazik)   // WP0-FIX: per-field fallback for unknown raw values
+        profileForHigh = AppSettings.decodedProfile(c, .profileForHigh, fallback: .israrci)   // WP0-FIX: per-field fallback for unknown raw values
+        profileForCritical = AppSettings.decodedProfile(c, .profileForCritical, fallback: .birakmaz)   // WP0-FIX: per-field fallback for unknown raw values
         criticalIgnoresQuietHours = c.lenient(Bool.self, forKey: .criticalIgnoresQuietHours, default: criticalIgnoresQuietHours)
         eventDefaultLeadMinutes = min(1440, max(0, c.lenient(Int.self, forKey: .eventDefaultLeadMinutes, default: eventDefaultLeadMinutes)))
         badgeMode = c.lenient(BadgeMode.self, forKey: .badgeMode, default: badgeMode)
@@ -169,5 +169,15 @@ public struct AppSettings: Codable, Equatable, Hashable {
 
     private static func selectable(_ kind: NagProfileKind, fallback: NagProfileKind) -> NagProfileKind {
         NagProfileKind.selectable.contains(kind) ? kind : fallback
+    }
+
+    // WP0-FIX: NagProfileKind.init(from:) maps an unknown raw value to .nazik, which silently downgraded a garbled
+    // profileForCritical (default .birakmaz, D7). Decode the raw string here so missing/unknown/non-selectable values
+    // fall back to each field's documented default.
+    private static func decodedProfile(_ c: KeyedDecodingContainer<CodingKeys>, _ key: CodingKeys,
+                                       fallback: NagProfileKind) -> NagProfileKind {
+        guard let raw = c.lenientOptional(String.self, forKey: key),
+              let kind = NagProfileKind(rawValue: raw) else { return fallback }
+        return selectable(kind, fallback: fallback)
     }
 }

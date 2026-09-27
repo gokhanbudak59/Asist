@@ -31,6 +31,15 @@ public struct LossyDecodableArray<Element: Decodable>: Decodable {
         var container = try decoder.unkeyedContainer()
         var result: [Element] = []
         while !container.isAtEnd {
+            // WP0-FIX: skip JSON null elements instead of stopping. decodeNil() returns true only for a null and then
+            // advances the index; for a non-null value it returns false without advancing.
+            let indexBefore = container.currentIndex   // WP0-FIX: progress guard (no decoder can make this spin)
+            if (try? container.decodeNil()) == true {
+                if container.currentIndex == indexBefore {
+                    break   // WP0-FIX: a decoder that reports null without advancing cannot loop forever
+                }
+                continue   // WP0-FIX: null element skipped
+            }
             if let element = try? container.decode(Element.self) {
                 result.append(element)
             } else if (try? container.decode(SkippedElement.self)) == nil {

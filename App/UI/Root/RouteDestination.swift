@@ -1,4 +1,4 @@
-// WP0 STUB (04 §5.1) — replaced by WP9. `Route → View` switch (already the final mapping).
+// WP9 (04 §5.1): `Route → View` switch for every NavigationStack (value-based links only).
 import SwiftUI
 
 struct RouteDestination: View {

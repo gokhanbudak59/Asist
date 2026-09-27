@@ -1,4 +1,5 @@
-// WP0 STUB (04 §5.1) — replaced by WP9. 4 tabs, one NavigationStack each, classic .tabItem (iOS 17).
+// WP9 (04 §5.1; 03 §4.1): 4 tabs, one NavigationStack each (path owned by AppRouter), classic .tabItem (iOS 17),
+// one `.navigationDestination(for: Route.self)` per stack on its root view.
 import SwiftUI
 
 struct MainTabView: View {

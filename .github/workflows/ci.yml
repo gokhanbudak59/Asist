@@ -44,17 +44,26 @@ jobs:
       - name: swift build + swift test
         working-directory: Packages/AsistCore
         run: |
-          swift build --build-tests 2>&1 | tee "$RUNNER_TEMP/swift-build.log"
-          swift test --skip-build --parallel 2>&1 | tee "$RUNNER_TEMP/swift-test.log"
+          mkdir -p "$GITHUB_WORKSPACE/ci-out"
+          swift build --build-tests 2>&1 | tee "$GITHUB_WORKSPACE/ci-out/swift-build.log"
+          swift test --skip-build --parallel 2>&1 | tee "$GITHUB_WORKSPACE/ci-out/swift-test.log"
       - name: Hata özeti
         if: failure()
         run: |
           {
             echo "## AsistCore hataları"
             echo '```'
-            grep -hE "error:|failed|XCTAssert" "$RUNNER_TEMP"/swift-*.log | sort -u | head -80 || true
+            grep -hE "error:|failed|XCTAssert" "$GITHUB_WORKSPACE"/ci-out/swift-*.log | sort -u | head -80 || true
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Yükle — çekirdek günlükleri
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: core-gunlukleri
+          path: ci-out/*.log
+          retention-days: 7
+          if-no-files-found: ignore
 
   ios:
     name: iOS derleme + IPA (macOS 26)
@@ -157,3 +166,56 @@ jobs:
             ${{ runner.temp }}/xcodegen.log
           retention-days: 7
           if-no-files-found: ignore
+
+  publish-logs:
+    name: Günlükleri yayınla (ci-logs dalı)
+    needs: [core-tests, ios]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Günlükleri indir
+        uses: actions/download-artifact@v8
+        with:
+          pattern: "*-gunlukleri"
+          path: logs
+      - name: ci-logs dalına yaz
+        env:
+          CORE: ${{ needs.core-tests.result }}
+          IOS: ${{ needs.ios.result }}
+          RUN: ${{ github.run_number }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          TOKEN: ${{ github.token }}
+        run: |
+          git config --global user.name "asist-ci"
+          git config --global user.email "asist-ci@users.noreply.github.com"
+          URL="https://x-access-token:${TOKEN}@github.com/${REPO}.git"
+          if git ls-remote --exit-code --heads "$URL" ci-logs >/dev/null 2>&1; then
+            git clone -q --depth 1 --branch ci-logs "$URL" out
+          else
+            mkdir out && git -C out init -q && git -C out checkout -q --orphan ci-logs
+          fi
+          D="out/runs/$RUN"
+          mkdir -p "$D"
+          { echo "run: $RUN"; echo "sha: $SHA"; echo "core-tests: $CORE"; echo "ios: $IOS"; } > "$D/summary.txt"
+          ls -R logs > "$D/files.txt" 2>&1 || true
+          CL=logs/core-gunlukleri
+          if ls "$CL"/*.log >/dev/null 2>&1; then
+            grep -hE "error:|CORPUS|failed|XCTAssert|Executed [0-9]+ test|Test Suite '(All tests|AsistCorePackageTests)'" "$CL"/*.log | head -6000 > "$D/core-errors.txt" || true
+            tail -n 400 "$CL/swift-test.log" > "$D/core-test-tail.txt" 2>/dev/null || true
+            tail -n 200 "$CL/swift-build.log" > "$D/core-build-tail.txt" 2>/dev/null || true
+          fi
+          IL=logs/derleme-gunlukleri
+          if [ -f "$IL/xcodebuild.log" ]; then
+            grep -E "(error|warning): " "$IL/xcodebuild.log" | sed -E 's#/Users/runner/work/[^/]+/[^/]+/##g' | sort | uniq | head -4000 > "$D/ios-errors.txt" || true
+            tail -n 300 "$IL/xcodebuild.log" | sed -E 's#/Users/runner/work/[^/]+/[^/]+/##g' > "$D/ios-tail.txt"
+          fi
+          if [ -f "$IL/xcodegen.log" ]; then cp "$IL/xcodegen.log" "$D/xcodegen.log"; fi
+          rm -rf out/latest
+          cp -R "$D" out/latest
+          git -C out add -A
+          git -C out commit -q -m "CI günlükleri #$RUN (core: $CORE, ios: $IOS)"
+          git -C out push -q "$URL" HEAD:ci-logs
