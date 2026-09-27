@@ -103,6 +103,8 @@ struct RootView: View {
             router.openRoute(.triggerSettings, in: .settings)
         case .dataSettings:
             router.openRoute(.dataSettings, in: .settings)
+        case .showTab(let tab):
+            router.showTab(tab)
         }
     }
 }

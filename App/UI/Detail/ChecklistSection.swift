@@ -10,6 +10,7 @@ struct ChecklistSection: View {
 
     @Environment(DataStore.self) private var store
     @Environment(ToastCenter.self) private var toasts
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var newEntry = ""
     @FocusState private var addFocused: Bool
@@ -33,7 +34,18 @@ struct ChecklistSection: View {
                         .focused($addFocused)
                         .submitLabel(.done)
                         .onSubmit {
-                            addEntry()
+                            addEntry(fromSubmit: true)
+                        }
+                        // Typed text is never dropped silently: focus loss (another field, "Bitti"), leaving the
+                        // screen and backgrounding also add the pending entry, like the other detail fields.
+                        .onChange(of: addFocused) { oldValue, newValue in
+                            if oldValue && !newValue { addEntry(fromSubmit: false) }
+                        }
+                        .onChange(of: scenePhase) { _, phase in
+                            if phase == .background { addEntry(fromSubmit: false) }
+                        }
+                        .onDisappear {
+                            addEntry(fromSubmit: false)
                         }
                 }
                 .frame(minHeight: 44)
@@ -120,10 +132,12 @@ struct ChecklistSection: View {
         }
     }
 
-    private func addEntry() {
+    /// `fromSubmit`: Return was pressed — keep the keyboard for the next entry (or drop it on an empty field).
+    /// Otherwise (focus loss, disappear, background) only commit the pending text and leave focus alone.
+    private func addEntry(fromSubmit: Bool) {
         let text = newEntry.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else {
-            addFocused = false
+            if fromSubmit { addFocused = false }
             return
         }
         let entry = ChecklistEntry(text: text)
@@ -135,8 +149,10 @@ struct ChecklistSection: View {
             return
         }
         newEntry = ""
-        addFocused = true      // keep the keyboard for the next entry
-        Haptics.selection()
+        if fromSubmit {
+            addFocused = true      // keep the keyboard for the next entry
+            Haptics.selection()
+        }
     }
 
     private func applyTemplate(_ template: ChecklistTemplate) {

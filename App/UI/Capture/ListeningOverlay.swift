@@ -261,11 +261,20 @@ struct ListeningOverlay: View {
         let request = voice.request
         voice.cancelListening()
         toasts.dismiss()
-        if !partial.isEmpty && request.snoozeItemID == nil {
-            store.updateMeta { meta in
-                meta.composeDraft = partial
+        let capture = AppEnvironment.shared.capture
+        if capture.hasPendingRedo {
+            // "Tekrar söyle" → "Klavye": nothing new heard → back to the card (its title is editable); new words →
+            // they continue in Yaz and replace the old card, like a new transcript would.
+            if partial.isEmpty {
+                capture.restoreRedoDraftIfNeeded()
+                return
             }
+            capture.abandonRedoDraft()
         }
+        // Handed over in memory, not through meta.composeDraft: an earlier unsent "Yaz" draft must not be
+        // overwritten, and a project/note compose must still get the partial. ComposeSheet adds it below the
+        // stored draft.
+        router.composeSeedText = (!partial.isEmpty && request.snoozeItemID == nil) ? partial : nil
         router.present(.compose(request))
     }
 }

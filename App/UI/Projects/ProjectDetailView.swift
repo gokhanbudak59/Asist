@@ -1,5 +1,7 @@
 // WP10 — Proje detayı (03 §4.9): İşler / Notlar / Tamamlanan + "Bu projeye sesli not".
+// WP13: "Özetle" (Akıllı Mod) on the Notlar tab when Smart Mode is on and a key is stored.
 import SwiftUI
+import UIKit
 import AsistCore
 
 @MainActor
@@ -32,6 +34,11 @@ struct ProjectDetailView: View {
     }
 
     @State private var tab: ProjectTab = .items
+    /// WP13 "Özetle".
+    @State private var smartReady = false
+    @State private var summaryBusy = false
+    @State private var summaryOutcome: SmartSummaryOutcome? = nil
+    @State private var summaryError: String? = nil
 
     /// Explicit: private @State storage must not narrow the memberwise initializer's access (RouteDestination.swift).
     init(projectID: UUID) {
@@ -55,6 +62,12 @@ struct ProjectDetailView: View {
         }
         .navigationTitle(store.project(projectID)?.name ?? "Proje")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            refreshSmartReady()
+        }
+        .onChange(of: store.settings.smartModeEnabled) { _, _ in
+            refreshSmartReady()
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if let project = store.project(projectID) {
@@ -168,6 +181,9 @@ struct ProjectDetailView: View {
             }
             .listRowBackground(Color.clear)
         } else {
+            if smartReady {
+                smartSummarySection(notes: data.notes)
+            }
             Section {
                 ForEach(data.notes) { item in
                     NavigationLink(value: Route.item(item.id)) {
@@ -204,6 +220,75 @@ struct ProjectDetailView: View {
                 SectionHeader(title: "TAMAMLANAN", count: data.done.count)
             }
         }
+    }
+
+    // MARK: - Akıllı Mod summary (WP13)
+
+    private func smartSummarySection(notes: [Item]) -> some View {
+        Section {
+            Button {
+                summarize(notes)
+            } label: {
+                HStack(spacing: 10) {
+                    Label(summaryButtonTitle, systemImage: Symbol.smartMode)
+                    Spacer()
+                    if summaryBusy {
+                        ProgressView()
+                    }
+                }
+                .frame(minHeight: 44)
+            }
+            .disabled(summaryBusy)
+            if let outcome = summaryOutcome {
+                summaryRows(outcome)
+            }
+            if let message = summaryError {
+                Text(message)
+                    .font(.footnote)
+                    .foregroundStyle(Color.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } header: {
+            SectionHeader(title: "AKILLI ÖZET")
+        } footer: {
+            Text("“Özetle” bu projenin not metinlerini Anthropic'e gönderir.")
+        }
+    }
+
+    @ViewBuilder
+    private func summaryRows(_ outcome: SmartSummaryOutcome) -> some View {
+        if !outcome.summary.summary.isEmpty {
+            Text(outcome.summary.summary)
+                .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+        }
+        ForEach(Array(outcome.summary.actionItems.enumerated()), id: \.offset) { entry in
+            Label(entry.element, systemImage: "checkmark.circle")
+                .font(.subheadline)
+        }
+        if outcome.usedNotes < outcome.totalNotes {
+            Text(summaryCoverageText(outcome))
+                .font(.footnote)
+                .foregroundStyle(Color.secondary)
+        }
+        Button {
+            copySummary(outcome)
+        } label: {
+            Label("Özeti kopyala", systemImage: "doc.on.doc")
+                .frame(minHeight: 44)
+        }
+    }
+
+    private var summaryButtonTitle: String {
+        if summaryBusy {
+            return "Özetleniyor…"
+        }
+        return summaryOutcome == nil ? "Özetle" : "Yeniden özetle"
+    }
+
+    private func summaryCoverageText(_ outcome: SmartSummaryOutcome) -> String {
+        "En yeni " + String(outcome.usedNotes) + " not özetlendi (toplam " + String(outcome.totalNotes) + ")."
     }
 
     private func noteRow(_ item: Item, now: Date) -> some View {
@@ -309,6 +394,51 @@ struct ProjectDetailView: View {
     }
 
     // MARK: - Actions
+
+    private func refreshSmartReady() {
+        smartReady = SmartModeClient.shared.isReady(store.settings)
+    }
+
+    /// WP13: sends only this project's name and note texts (newest first, dated) — never other data.
+    private func summarize(_ notes: [Item]) {
+        guard !summaryBusy, let project = store.project(projectID) else { return }
+        summaryBusy = true
+        summaryError = nil
+        let settings = store.settings
+        let calendar = AppTime.calendar
+        var texts: [String] = []
+        for note in notes {
+            let body = note.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            let text = body.isEmpty ? note.title : body
+            texts.append(SettingsFormat.dayMonthYear(note.createdAt, calendar: calendar) + ": " + text)
+        }
+        let name = project.name
+        Task { @MainActor in
+            let result = await SmartModeClient.shared.summarize(notes: texts, project: name, settings: settings)
+            summaryBusy = false
+            switch result {
+            case .success(let outcome):
+                summaryOutcome = outcome
+                Haptics.success()
+            case .failure(let error):
+                summaryError = error.userMessage
+                Haptics.warning()
+            }
+        }
+    }
+
+    private func copySummary(_ outcome: SmartSummaryOutcome) {
+        var lines: [String] = []
+        if !outcome.summary.summary.isEmpty {
+            lines.append(outcome.summary.summary)
+        }
+        for action in outcome.summary.actionItems {
+            lines.append("• " + action)
+        }
+        UIPasteboard.general.string = lines.joined(separator: "\n")
+        toasts.show("Özet kopyalandı")
+        Haptics.selection()
+    }
 
     private func startVoiceNote() {
         let request = ListenRequest(kind: .note, projectID: projectID)

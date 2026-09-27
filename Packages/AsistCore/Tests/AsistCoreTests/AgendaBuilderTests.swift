@@ -459,6 +459,11 @@ final class AgendaBuilderTests: XCTestCase {
         let item = teklif
         XCTAssertEqual(NotificationCopy.longTailContent(item: item, projectName: nil).subtitle,
                        "Hâlâ açık · her sabah soracağım")
+        // A Takip long-tail fires at followUpAskTime (16:00): no "her sabah" promise.
+        let waiting = makeItem(.waiting, "I/O listesi", due: "2026-09-29T10:00", hasTime: false, person: "Mehmet")
+        let waitingTail = NotificationCopy.longTailContent(item: waiting, projectName: nil)
+        XCTAssertEqual(waitingTail.subtitle, "Hâlâ gelmedi · her gün soracağım")
+        XCTAssertFalse(waitingTail.subtitle.contains("sabah"))
         var daily = item
         daily.recurrence = Recurrence(frequency: .daily)
         let carrier = NotificationCopy.recurrenceCarrierContent(item: daily, projectName: nil, calendar: calendar)   // WP0-FIX: D29 injected calendar

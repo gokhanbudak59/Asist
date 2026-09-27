@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Project | **Asist** — native iOS voice assistant for an automation manager (all UI/voice text Turkish) |
-| Date | 2026-09-27 (Sunday), Europe/Istanbul — revision 2 (critiques 05a + 05b applied, see §12) |
+| Date | 2026-09-27 (Sunday), Europe/Istanbul — revision 2 (critiques 05a + 05b applied, see §12); revision 3 (WP13 Akıllı Mod activated from Appendix B.2, see §12.1) |
 | Status | **Binding.** Supersedes any conflicting detail in 01a / 01b / 01c / 02 / 03 / 05a / 05b / 06 (see §0.3). Critique items not adopted are listed with reasons in §11. |
 | Toolchain | iOS deployment target **17.0**, device iPhone 14 Pro Max on iOS 26, CI Xcode **26.x** (macos-26 runner), **Swift language mode 5**, `SWIFT_STRICT_CONCURRENCY = minimal`, XcodeGen 2.46.0 |
 | Verification | No local compiler. The only compiler is CI (Linux `swift test` for AsistCore + macOS `xcodebuild`). Every rule below exists to make the **first CI build** succeed. |
@@ -44,7 +44,7 @@
 | D12 | AlarmKit | **Excluded from v1.x** (research rates the API "medium" compile risk). v2 candidate for Kritik only (Appendix B.5). No `NSAlarmKitUsageDescription`, no `ASIST_ALARMKIT` flag. | 01a D8 |
 | D13 | Live Activities / widget "Tamam" button | **Excluded.** Home/lock-screen widgets and the Control Center control are **v1.1** (Appendix B.4). | 01b §4.9, 01c |
 | D14 | Deep links | `asist://dinle[?tur=…&proje=<uuid>]`, `asist://yaz`, `asist://bugun`, `asist://kayit/<uuid>[?eylem=yaptim]`, `asist://gunsonu`, `asist://oku`, `asist://ayarlar/tetikleyiciler`. All are handled in v1.0 (Shortcuts can use them); widgets reuse them in v1.1. | 03 `oge` |
-| D15 | Smart Mode (Claude API) | **Deferred to v1.1** (Appendix B.2 keeps the binding design: default `claude-opus-5` + `fallbacks: "default"`, options `claude-sonnet-5`, `claude-haiku-4-5`, no date suffixes). The `smartMode*` fields stay in `AppSettings` (forward compatible, unused in v1.0). | brief, 02 §14, 03 |
+| D15 | Smart Mode (Claude API) | **Deferred to v1.1** (Appendix B.2 keeps the binding design: default `claude-opus-5` + `fallbacks: "default"`, options `claude-sonnet-5`, `claude-haiku-4-5`, no date suffixes). The `smartMode*` fields stay in `AppSettings` (forward compatible, unused in v1.0). **Revision 3: activated as WP13** (user decision) — contracts §3.5.9 / §3.6.9, deltas §12.1; off by default. | brief, 02 §14, 03 |
 | D16 | Volume ×2 trigger | Foreground only (01b §3). **Restores the previous volume by default** (setting `restoreVolumeAfterTrigger`, default on). Armed only in `sceneDidBecomeActive` while the app is active (05a #25). | 03 §5.2 "does not restore" |
 | D17 | Signing-expiry warnings | Planned by `NagPlanner` (single writer, IDs `asist.sign.<minuteKey>`): **every** date of `SigningExpiryPlanner.warningDates` (48 h / 24 h / 4 h, night-shifted) **plus one "imza doldu" notice at expiry + 1 min**. Planned **only when the embedded profile is readable** (no estimate-based planning, 05a #28). One-shot follow-up nags after `expiry − 5 min` are not planned (05b A1). `SigningMonitor.reload()` runs in every process before the first reconcile (05a #4). | 01c §4.4, rev. 1 (next 2) |
 | D18 | Spoken confirmations | The ring/silent switch cannot be read. Confirmations are spoken **only on a private audio route** (headphones, Bluetooth, CarPlay, USB audio) unless `speakConfirmationsOnSpeaker` (default **off**); otherwise toast + haptic. Query answers ("bugün ne var") are always spoken. | 03 §4.11, rev. 1 |
@@ -56,7 +56,7 @@
 | D24 | Corpus in tests | Read `docs/design/parser_corpus.json` **and** `docs/design/parser_corpus_extra.json` through `#filePath` (single copy, no SwiftPM resources). Gate rules §3.4.6. | 02 §15, 01c L9 |
 | D25 | Info.plist | Only keys for features in v1.0 scope (§7.1). No location key, **no `INAlternativeAppNames`** ("Asistan'e" breaks vowel harmony, 05b F5). `UIFileSharingEnabled` + `LSSupportsOpeningDocumentsInPlace` so backups are visible in the Files app. | 01c §1.2 |
 | D26 | Categories vs lock-screen privacy | One category set; it is **re-registered** when `lockScreenShowsContent` changes. No "_PRIVATE" duplicates. | 01a §7.2 |
-| D27 | Recurring items | Only the current occurrence nags. Future occurrences are carried by **repeating requests** (daily / weekly per weekday / monthly day 1…28, interval 1) whenever the rule's next fire equals the item's next occurrence (or its current, un-snoozed due); otherwise by one-shot k = 0 of the **next 7 occurrences** (≤ 14 days; the first one beyond 14 days as tier 4). `ReminderEngine` rolls an open recurring item forward to the latest occurrence ≤ now on every reconcile and before every notification action (history `occurrenceMissed`). | 01a §5.2, 03 §3.13, rev. 1 (next 2) |
+| D27 | Recurring items | Only the current occurrence nags. Future occurrences are carried by **repeating requests** (daily / weekly per weekday / monthly day 1…28, interval 1) whenever the rule's next fire equals the item's next occurrence (or its current, un-snoozed due); otherwise by one-shot k = 0 of the **next 7 occurrences** (≤ 14 days; the first one beyond 14 days as tier 4). `ReminderEngine` rolls an open recurring item forward to the latest occurrence ≤ now on every reconcile and before every notification action (history `occurrenceMissed`); a still-future snooze never blocks this (it already reaches past that occurrence and is cleared). | 01a §5.2, 03 §3.13, rev. 1 (next 2) |
 | D28 | Localization | No `Localizable.strings`/String Catalog. Turkish text literals inline (copy from 03 §7.12 **as amended by §5.5**). Only `App/Resources/tr.lproj/AppShortcuts.strings` exists. Uppercase section titles are literals (`"GECİKENLER"`), never `.uppercased()`. | 03 §7.12 keys are copy only |
 | D29 | Time zone | AsistCore functions always take an injected `Calendar`. The app uses `AppTime.calendar` = Gregorian, **device time zone** (`.autoupdatingCurrent`), Monday-first, `en_US_POSIX` locale. Tests use `TurkishParser.defaultCalendar()` (Europe/Istanbul). | — |
 | D30 | Staged scope | **v1.0 "Çekirdek"** = one app target (no extension, no App Group, no CoreLocation, no Smart Mode). v1.1 = widgets + Control, Smart Mode, active project, backup to a chosen folder, before-first-unlock journal. v1.2 = location reminders. v2 = AlarmKit (Kritik), Live Activity. Each Sideloadly install of v1.0 consumes **1** App ID. | rev. 1 §1 (29 features, 2 targets) |
@@ -119,7 +119,7 @@ v1.2: location reminders (`UNLocationNotificationTrigger`, Places, Appendix B.3)
 
 ## 2. Repository tree (every v1.0 file, owner work package, responsibility)
 
-Root: `C:\ClaudeProjects\Asist` (git repo root). Paths below are relative to it. **Every directory listed as a source path in `project.yml` must contain at least one `.swift` file** (XcodeGen fails on missing paths; git does not store empty dirs). v1.0 has exactly one source root: `App/`. Files of v1.1+ features are listed in Appendix B and MUST NOT be created in v1.0.
+Root: `C:\ClaudeProjects\Asist` (git repo root). Paths below are relative to it. **Every directory listed as a source path in `project.yml` must contain at least one `.swift` file** (XcodeGen fails on missing paths; git does not store empty dirs). v1.0 has exactly one source root: `App/`. Files of v1.1+ features are listed in Appendix B and MUST NOT be created in v1.0. **Revision 3 exception:** the WP13 Akıllı Mod files below (marked WP13) are active (§12.1).
 
 ### 2.1 Root, CI, tools, docs
 
@@ -195,6 +195,7 @@ AsistCore MUST NOT import SwiftUI, UIKit, UserNotifications, AVFoundation, Speec
 | `Sources/AsistCore/Platform/ProvisioningProfile.swift` | WP0 | verbatim 01c §4.1 |
 | `Sources/AsistCore/Platform/AppGroupResolver.swift` | WP0 | verbatim 01c §4.2 (tested by `PlatformTests`; unused by the v1.0 app) |
 | `Sources/AsistCore/Platform/SigningExpiryPlanner.swift` | WP0 | verbatim 01c §4.3 |
+| `Sources/AsistCore/SmartMode/SmartModeWire.swift` | WP13 | model ids, `JSONValue`, Messages API request/response wire types, byte-stable schemas, Turkish prompts, HTTP retry policy, validator → `ParseResult` (API §3.5.9) |
 | `Tests/AsistCoreTests/TestSupport.swift` | WP0 | `TestClock` helpers, corpus URLs via `#filePath` (§3.3.4) |
 | `Tests/AsistCoreTests/PlatformTests.swift` | WP0 | verbatim 01c §4.5 |
 | `Tests/AsistCoreTests/TurkishTextTests.swift` | WP0 | trLower/fold/searchKey cases from 02 §3 |
@@ -212,6 +213,7 @@ AsistCore MUST NOT import SwiftUI, UIKit, UserNotifications, AVFoundation, Speec
 | `Tests/AsistCoreTests/FuzzyMatcherTests.swift` | WP2 | 03 §5.8 rows 24–26 |
 | `Tests/AsistCoreTests/ItemFactoryTests.swift` | WP2 | D20/D21/D33 defaults, event detection, levels D10 |
 | `Tests/AsistCoreTests/DeepLinkTests.swift` | WP8 | URL round trips |
+| `Tests/AsistCoreTests/SmartModeWireTests.swift` | WP13 | request per model (effort / fallbacks rules), strict schemas, thinking / fallback / unknown blocks, refusal, max_tokens, malformed JSON, retry policy, validator |
 
 ### 2.3 `App/` — target **Asist** (application, the only target). Compilation condition `ASIST_APP`.
 
@@ -245,6 +247,8 @@ AsistCore MUST NOT import SwiftUI, UIKit, UserNotifications, AVFoundation, Speec
 | `App/Services/CaptureDraft.swift` | WP7 | confirmation-card model (API §3.6.8) |
 | `App/Services/CaptureService.swift` | WP7 | parse → draft/save, headless capture, voice snooze (API §3.6.8) |
 | `App/Services/CommandExecutor.swift` | WP7 | queries, voice complete/cancel/snooze (API §3.6.8) |
+| `App/SmartMode/KeychainStore.swift` | WP13 | Keychain generic password for the API key — the only `import Security` (API §3.6.9) |
+| `App/SmartMode/SmartModeClient.swift` | WP13 | URLSession client: interpret / draftMessage / summarize / testConnection, doc 06 retry policy (API §3.6.9) |
 | `App/Routing/AppRouter.swift` | WP0 | tabs, paths, sheets, pending actions (§3.6.10, exact) |
 | `App/Platform/SigningMonitor.swift` | WP8 | profile expiry, re-sign detection (API §3.6.11) |
 | `App/Intents/DinleIntent.swift` | WP0 (exact §3.7) | opens app + starts listening |
@@ -302,6 +306,7 @@ AsistCore MUST NOT import SwiftUI, UIKit, UserNotifications, AVFoundation, Speec
 | `App/UI/Settings/TriggerSettingsView.swift` | WP11 | volume trigger + guides list |
 | `App/UI/Settings/GuideView.swift` | WP11 | guides A, A-alt, C, E, "Kalıcı bildirim" |
 | `App/UI/Settings/DataSettingsView.swift` | WP11 | export/import (security-scoped)/backups |
+| `App/UI/Settings/SmartModeSettingsView.swift` | WP13 | "Akıllı Mod": toggle, API key (`SecureField`, save/delete), model picker, "Bağlantıyı dene", privacy text |
 | `App/UI/Settings/RecentlyDeletedView.swift` | WP11 | "Son silinenler" (05b B8) |
 | `App/UI/Settings/AppStatusView.swift` | WP11 | signing, permissions, version, data writer build |
 | `App/UI/Settings/DiagnosticsView.swift` | WP11 | pending list, last reconcile, log, test notification |
@@ -2228,11 +2233,15 @@ public struct PlanInput {
     public var allowTimeSensitive: Bool
     public var totalBudget: Int
     public var reservedSlots: Int
+    /// Trigger dates of the pending chain-nag requests (`NotificationID.chain`, k ≥ 1), keyed by id; empty = none
+    /// known. DEVIATION (§6.4 step 1b): a nag the rate limiter shifted past its chain date stays planned at its
+    /// pending date (≤ 15 min later) instead of being removed by a reconcile that runs between the two dates.
+    public var pendingNagDates: [String: Date]
 
     public init(items: [Item], projects: [Project], places: [Place], settings: AppSettings, now: Date,
                 calendar: Calendar, signingExpiry: Date?, locationSlotsUsed: Int = 0,
                 allowTimeSensitive: Bool = true, totalBudget: Int = 64,
-                reservedSlots: Int = PlanInput.defaultReservedSlots) {
+                reservedSlots: Int = PlanInput.defaultReservedSlots, pendingNagDates: [String: Date] = [:]) {
         self.items = items
         self.projects = projects
         self.places = places
@@ -2244,6 +2253,7 @@ public struct PlanInput {
         self.allowTimeSensitive = allowTimeSensitive
         self.totalBudget = totalBudget
         self.reservedSlots = reservedSlots
+        self.pendingNagDates = pendingNagDates
     }
 
     /// Slots available to item notifications (chain, day-tail, pre-alerts, long-tails, occurrences, carriers).
@@ -2454,7 +2464,8 @@ public enum NotificationCopy {
     public static func followUpContent(item: Item, attempt: Int, fireDate: Date, calendar: Calendar) -> NotificationText
     /// "<30 dakika> sonra: <title>" / "<Salı 15:00> · <Proje>" (category ASIST_PRE).
     public static func preAlertContent(item: Item, projectName: String?, leadMinutes: Int, calendar: Calendar) -> NotificationText
-    /// Daily repeating safety net (static text): subtitle "Hâlâ açık · her sabah soracağım" (05b F11).
+    /// Daily repeating safety net (static text): subtitle "Hâlâ açık · her sabah soracağım" (05b F11); waiting
+    /// (Takip, fires at settings.followUpAskTime) → "Hâlâ gelmedi · her gün soracağım".
     public static func longTailContent(item: Item, projectName: String?) -> NotificationText
     /// Repeating carrier of a recurring item (static text): subtitle "<Her gün 09:00> · tekrarlayan".
     /// WP0-FIX (D29): the clock time is read in the injected `calendar` (NagPlanner passes the plan's calendar).
@@ -2701,9 +2712,110 @@ public enum DeepLink: Equatable {
 
 `WidgetSnapshot`, `SnapshotStore` and `WidgetSnapshotBuilder` are **not built in v1.0** (D30). Binding design: **Appendix B.4**. `Platform/AppGroupResolver.swift` stays in v1.0 AsistCore only because the verbatim `PlatformTests` (01c §4.5) test it; no v1.0 app code calls it.
 
-#### 3.5.9 Smart Mode wire types — deferred to v1.1
+#### 3.5.9 Smart Mode wire types — WP13 (revision 3)
 
-`AsistCore/SmartMode/*` is **not built in v1.0** (D15/D30). Binding design (doc 06 facts): **Appendix B.2**.
+Activated from Appendix B.2 (deltas in §12.1). Doc 06 facts are binding. Pure Foundation, synchronous, no `Date()`.
+
+```swift
+// API: Packages/AsistCore/Sources/AsistCore/SmartMode/SmartModeWire.swift
+import Foundation
+
+public enum SmartModeModelID {
+    public static let opus5 = "claude-opus-5"        // default
+    public static let sonnet5 = "claude-sonnet-5"
+    public static let haiku45 = "claude-haiku-4-5"
+    public static let all: [String]; public static let defaultID: String
+    public static func normalized(_ id: String) -> String          // unknown → claude-opus-5
+    public static func label(_ id: String) -> String               // doc 06 Turkish labels
+    public static func shortLabel(_ id: String) -> String          // "Opus 5" / "Sonnet 5" / "Haiku 4.5"
+    public static func supportsEffort(_ id: String) -> Bool         // false for Haiku 4.5
+    public static func usesServerFallback(_ id: String) -> Bool     // true only for claude-opus-5
+}
+
+/// Schemas are built in code and encoded with sorted keys → byte-stable (schema cache).
+public enum JSONValue: Codable, Equatable, Sendable {
+    case object([String: JSONValue]), array([JSONValue]), string(String), integer(Int), number(Double), bool(Bool), null
+    public subscript(_ key: String) -> JSONValue? { get }
+    public var objectValue: [String: JSONValue]? { get }   // + arrayValue, stringValue, intValue, boolValue
+}
+
+/// The model's JSON (keys == schema property names; optionals are JSON null).
+public struct SmartParseResponse: Codable, Equatable {
+    public struct RecurrenceDTO: Codable, Equatable { freq: String; interval: Int; weekdays: [Int]?; monthDay: Int?; month: Int? }
+    public struct PlaceDTO: Codable, Equatable { name: String; trigger: String }
+    public struct CommandDTO: Codable, Equatable { type: String; scope: String?; date: String?; query: String?; snoozeMinutes: Int? }
+    public var kind: String; title: String; body: String?; due: String?; hasTime: Bool; recurrence: RecurrenceDTO?
+    public var priority: String; person: String?; project: String?; place: PlaceDTO?; leadTimesMinutes: [Int]
+    public var command: CommandDTO?; confidence: Double
+}
+public struct SmartDraftResponse: Codable, Equatable { public var message: String }
+public struct SmartProjectSummary: Codable, Equatable { public var summary: String; public var actionItems: [String] }
+
+public enum SmartModeSchemas {
+    /// Every object: "additionalProperties": false, all properties required; optionals = anyOf [T, null];
+    /// no minimum/maximum/minLength/maxLength.
+    public static let parse: JSONValue; public static let draft: JSONValue; public static let summary: JSONValue
+    public static func object(_ properties: [String: JSONValue]) -> JSONValue   // + nullable, enumeration, array
+}
+
+public enum SmartModePrompts {
+    public static let parseSystem: String, draftSystem: String, summarySystem: String   // static → cache-stable
+    public static let testSystem: String, testUser: String
+    /// "Şu an: 2026-09-27T10:30 (Pazar), saat dilimi Europe/Istanbul." + time words + projects + places +
+    /// on-device reading + "Cümle: \"…\"" (volatile data only here).
+    public static func parseUserMessage(utterance: String, now: Date, calendar: Calendar, settings: ParserSettings,
+                                        onDeviceHint: String) -> String
+    public static func draftUserMessage(title: String, person: String?, projectName: String?, notes: String,
+                                        waitingDays: Int, userName: String) -> String
+    public static func summaryUserMessage(projectName: String, notes: [String]) -> String
+}
+
+public struct SmartMessagesRequest: Encodable, Equatable {   // model, max_tokens, system, messages, output_config?, fallbacks?
+    public var model: String; maxTokens: Int; system: String; messages: [Message]
+    public var outputConfig: OutputConfig?                   // { effort?, format?: { type: "json_schema", schema } }
+    public var fallbacks: String?                            // "default" only for claude-opus-5
+}
+public enum SmartModeRequestBuilder {
+    public static let endpoint = "https://api.anthropic.com/v1/messages"
+    public static let anthropicVersion = "2023-06-01"
+    public static let fallbackBeta = "server-side-fallback-2026-07-01"
+    /// Never temperature/top_p/top_k/thinking, never an assistant prefill; effort dropped for Haiku 4.5.
+    public static func request(model: String, system: String, user: String, schema: JSONValue?, effort: String?,
+                               maxTokens: Int) -> SmartMessagesRequest
+    public static func body(_ request: SmartMessagesRequest) throws -> Data            // JSONEncoder, .sortedKeys
+    public static func headers(model: String, apiKey: String) -> [String: String]     // + anthropic-beta for opus-5
+}
+
+public struct SmartMessagesResponse: Decodable {              // loose: unknown / thinking / fallback blocks kept by type
+    public struct Block: Decodable { public var type: String; public var text: String? }
+    public var id: String?; model: String?; stopReason: String?; content: [Block]
+    public var joinedText: String { get }                     // only type == "text"
+}
+public struct SmartAPIErrorEnvelope: Decodable { public static func errorType(from data: Data) -> String? }
+public enum SmartResponseOutcome: Equatable { case text(String), refusal, truncated, empty }
+public enum SmartResponseReader {
+    public static func outcome(from data: Data) -> SmartResponseOutcome?       // nil = not a Messages response
+    public static func outcome(of response: SmartMessagesResponse) -> SmartResponseOutcome   // stop_reason first
+    public static func jsonObjectText(_ text: String) -> String?
+    public static func decode<T: Decodable>(_ type: T.Type, fromJSONText text: String) -> T?
+}
+public enum SmartHTTPStatus {
+    public enum Kind: Equatable { case success, badRequest, invalidKey, permissionDenied, notFound, tooLarge, rateLimited, overloaded, serverError, unexpected }
+    public static func kind(_ status: Int) -> Kind
+    /// 429 → retry-after clamped 0.5…5 s (1 s default); 5xx/529 → 1.5 s; else nil (never retry).
+    public static func retryDelay(status: Int, retryAfter: String?) -> Double?
+}
+
+public enum SmartModeValidator {
+    /// 02 §14: kind/enums valid, title non-empty ≤ 120, due "YYYY-MM-DD[THH:mm]" local and in the future (a day
+    /// without a clock → defaultDayTime / today policy, `.defaultTimeApplied`), notes never scheduled, recurrence
+    /// sanitised, lead times 1…527 040 (≤ 5), project/place ∈ known lists (else dropped), confidence ≤ 0.95;
+    /// commands: type/scope valid, snooze date in the future. `understood` regenerated on-device. nil = reject.
+    public static func parseResult(from response: SmartParseResponse, originalText: String, now: Date,
+                                   calendar: Calendar, parserSettings: ParserSettings) -> ParseResult?
+    public static func localDate(_ text: String, calendar: Calendar) -> (date: Date, hasClock: Bool)?
+}
+```
 
 ### 3.6 App target contracts
 
@@ -3357,12 +3469,16 @@ final class NotificationScheduler {
     /// 01a §5.4 diff-apply restricted to NotificationID.isPlannerManaged ids: remove managed pending ids not
     /// in `desired`; add desired ids whose pending fingerprint (userInfo "fp") differs or is missing.
     /// Duplicate ids in `desired` → first wins (no Dictionary(uniqueKeysWithValues:)).
-    /// `.once` with fireDate <= now is skipped. Returns number of add() calls.
-    @discardableResult func apply(_ desired: [PlannedNotification], now: Date, calendar: Calendar) async -> Int
+    /// `.once` with fireDate <= now is skipped. Returns number of add() calls. A pending non-repeating request
+    /// missing from `desired` that fires within NotificationStaleness.nearDueProtection (90 s) is kept when it has
+    /// no item or its item is in `protectedItemIDs` (planner lead margins must not delete a request about to fire).
+    @discardableResult func apply(_ desired: [PlannedNotification], now: Date, calendar: Calendar,
+                                  protectedItemIDs: Set<UUID>) async -> Int
     /// 05b B1 immediate path: adds exactly these requests (same factory, no diff, no removal; `.once` in the past skipped).
     @discardableResult func add(_ notifications: [PlannedNotification], now: Date, calendar: Calendar) async -> Int
-    /// Keep only the newest delivered notification per open item thread; remove delivered of closed items.
-    func cleanupDelivered(openItemIDs: Set<UUID>) async
+    /// Keep only the newest delivered notification per open item thread; remove delivered of closed items and
+    /// delivered notifications of a recurring item not newer than its last `.occurrenceDone`.
+    func cleanupDelivered(openItemIDs: Set<UUID>, lastOccurrenceDone: [UUID: Date]) async
     /// Removes delivered + pending of one item (every id containing its UUID, incl. the budget sentinel when its
     /// userInfo iid is this item).
     func removeAll(for itemID: UUID) async
@@ -3629,8 +3745,8 @@ final class CaptureDraft: Identifiable {
     nonisolated let id: UUID         // nonisolated: read by SheetRoute.id / Identifiable from any context
     let heardText: String
     let source: CaptureSource
-    let parse: ParseResult
-    let level: ConfirmationLevel
+    private(set) var parse: ParseResult          // revision 3: replaced by applySmart
+    let level: ConfirmationLevel                 // on-device level; drives the countdown only
     var item: Item                   // edited by chips
     var needsTime: Bool
     var alternativeTimes: [Date]
@@ -3641,6 +3757,12 @@ final class CaptureDraft: Identifiable {
     var autoSaveActive: Bool
     /// Set by commit/discard; prevents double handling on sheet dismissal.
     var isResolved: Bool = false
+    // Revision 3 (WP13):
+    var smartState: SmartDraftState = .idle      // enum SmartDraftState { idle, working, applied, unchanged(String), failed(String) }
+    private(set) var smartLevel: ConfirmationLevel? = nil
+    private(set) var smartRevision: Int = 0      // the sheet re-syncs local field copies on change
+    var effectiveLevel: ConfirmationLevel { get }            // smartLevel ?? level (implicit-save "Emin değilim" rule)
+    func applySmart(parse: ParseResult, proposal: CaptureProposal)
 
     init(heardText: String, source: CaptureSource, parse: ParseResult, proposal: CaptureProposal, autoSaveSeconds: Int)
     /// 0 when auto-save must not run (review level, needsTime, VoiceOver running, autoSaveSeconds == 0).
@@ -3691,12 +3813,17 @@ final class CaptureService {
     func discard(_ draft: CaptureDraft)
     /// Sheet swiped away / app backgrounded / call → commit unresolved active draft (03 principle 3).
     func commitActiveDraftIfNeeded()
-    /// Overlay interrupted with partial text → task with needsReview = true (03 §5.3).
-    func saveInterruptedTranscript(_ text: String)
+    /// Overlay interrupted with partial text → item with needsReview = true (03 §5.3), keeping request.kind/projectID.
+    /// request.snoozeItemID != nil → nothing saved or snoozed, toast "Erteleme yarıda kaldı. Tekrar dener misin?".
+    /// Shows its own toast; true only when the item was persisted.
+    @discardableResult func saveInterruptedTranscript(_ text: String, request: ListenRequest = ListenRequest()) -> Bool
+    /// complete/cancel/snooze command with no matching open item → the sentence as a needsReview task.
+    func saveUnmatchedCommand(text: String, source: CaptureSource) -> UnmatchedCommandSave   // .saved(UndoToken) | .keptInMemory | .failed
     /// Siri / Shortcut. Never opens UI. Exact order (D34, 05a #1/#3):
     /// 1 `if !store.isLoaded { store.load() }`; `guard store.isLoaded else { return TurkishSpeech.dataUnavailable }`;
     /// 2 parse (interactive: false); query → AgendaBuilder answer text; complete/cancel/snooze →
-    ///   router.request(.openItem/…) + "Bunun için Asist'i açman gerekiyor." (D22);
+    ///   router.request(.openItem/…) + "Bunun için Asist'i açman gerekiyor." (D22); no match (MatchDecision.none) →
+    ///   saveUnmatchedCommand + reconcile + "Eşleşen kayıt bulamadım; cümleni gözden geçirmen için kaydettim.";
     /// 3 item → `ItemFactory.proposal`; `guard store.add(item) != nil, store.canPersist else { return TurkishSpeech.saveFailed }`;
     /// 4 `await AppEnvironment.shared.engine.reconcile(reason: "intent")` — never `requestReconcile`;
     /// 5 return `TurkishSpeech.confirmation(…, headless: true, …)` (already dialogSafe).
@@ -3725,7 +3852,9 @@ final class CommandExecutor {
     /// query → AgendaBuilder.answer → router.present(.agenda(answer)) + voice.speak(answer.text) (always spoken, D18);
     /// complete/cancel/snooze → FuzzyMatcher (snooze: date filter = command.targetDate; complete with "geldi" → preferWaiting)
     /// → .single/.ambiguous → router.present(.match(proposal)), speaks "“X” tamamlandı mı?" /
-    /// "Birden fazla kayıt buldum, ekrandan seçer misin?"; .none → toast "Buna uyan bir kayıt bulamadım."
+    /// "Birden fazla kayıt buldum, ekrandan seçer misin?"; .none → `capture.saveUnmatchedCommand` keeps the sentence
+    /// as a needsReview task + toast "Eşleşen kayıt bulamadım; “Emin değilim” olarak kaydettim." with undo (nothing is
+    /// dropped); only when nothing could be stored → toast "Buna uyan bir kayıt bulamadım."
     func execute(_ command: ParsedCommand, originalText: String, source: CaptureSource) async
     /// "Oku" button, briefing "Sesli oku", asist://oku.
     func readTodayAgenda() async
@@ -3735,9 +3864,82 @@ final class CommandExecutor {
 }
 ```
 
-#### 3.6.9 Smart Mode client — deferred to v1.1
+#### 3.6.9 Smart Mode client — WP13 (revision 3)
 
-`KeychainStore` and `SmartModeClient` are **not built in v1.0** (D15/D30). Binding design: **Appendix B.2**.
+Activated from Appendix B.2 (deltas in §12.1). Off unless `settings.smartModeEnabled` **and** a key is stored.
+Logs (category `smart`) only purpose, model id, HTTP status, API error type, duration and result codes — never the
+key, the sentence, item or note texts.
+
+```swift
+// API: App/SmartMode/KeychainStore.swift
+import Foundation
+import Security          // the only file that imports Security (§9 r34)
+
+final class KeychainStore: @unchecked Sendable {
+    static let defaultService = "com.gokhanbudak.asist.smartmode"
+    static let apiKeyAccount = "anthropic-api-key"
+    init(service: String)
+    /// kSecClassGenericPassword, kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly, no access group.
+    func read(account: String) -> String?
+    func contains(account: String) -> Bool                     // existence only, no data read
+    @discardableResult func write(_ value: String, account: String) -> Bool      // delete-then-add
+    func delete(account: String)
+}
+```
+
+```swift
+// API: App/SmartMode/SmartModeClient.swift
+import Foundation
+import AsistCore
+
+enum SmartModeError: Error, Equatable {
+    case disabled, noKey, invalidKey, permissionDenied, modelNotFound, badRequest, tooLarge, rateLimited, overloaded
+    case server(Int), unexpectedStatus(Int), refusal, truncated, timedOut, offline, network, cancelled, decoding
+    case rejectedByValidator
+    var userMessage: String { get }   // Turkish ("API anahtarı geçersiz…", "Akıllı mod bu isteği işleyemedi.")
+    var logCode: String { get }       // content-free
+}
+struct SmartSummaryOutcome: Equatable { let summary: SmartProjectSummary; let usedNotes: Int; let totalNotes: Int }
+
+/// Not actor-isolated; value inputs; callers on the main actor `await` it. Lazy `shared` — never touches
+/// AppEnvironment (§4.1 r13, §9 r45 hold); AppEnvironment and CaptureService.init are unchanged.
+final class SmartModeClient: @unchecked Sendable {
+    static let shared: SmartModeClient
+    static let interactiveParseTimeout: TimeInterval   // 20 s (card already shows the on-device result)
+    static let headlessParseTimeout: TimeInterval      // 8 s (Siri / Shortcut, item already saved)
+    static let longTimeout: TimeInterval               // 60 s (draft / summary)
+    init(keychain: KeychainStore)
+    var hasKey: Bool { get }
+    func isReady(_ settings: AppSettings) -> Bool      // smartModeEnabled && hasKey
+    @discardableResult func saveKey(_ raw: String) -> Bool
+    func deleteKey()
+    static func cleanedKey(_ raw: String) -> String    // whitespace removed
+    /// effort "low" (omitted for Haiku), max_tokens 4096, SmartModeSchemas.parse; validated by SmartModeValidator.
+    /// `timeout` is the total budget incl. the single retry (doc 06: 429 → retry-after ≤ 5 s; 5xx/529 → 1.5 s;
+    /// URLError → once; 400/401/403/404/413 → never). stop_reason "refusal" → .refusal, "max_tokens" → .truncated.
+    func interpret(utterance: String, now: Date, settings: AppSettings, projects: [Project], places: [Place],
+                   onDeviceHint: String = "", calendar: Calendar = AppTime.calendar,
+                   timeout: TimeInterval = SmartModeClient.interactiveParseTimeout) async -> Result<ParseResult, SmartModeError>
+    /// Takip message: sends only this item's title / person / project name / notes (≤ 4000 chars), days waiting and
+    /// the "Hitap" name. 60 s, effort "medium", max_tokens 8000, SmartModeSchemas.draft.
+    func draftMessage(for item: Item, projectName: String?, settings: AppSettings, now: Date,
+                      calendar: Calendar = AppTime.calendar) async -> Result<String, SmartModeError>
+    /// Sends only the project name + note texts (newest first, ≤ 60 notes / 60 000 chars). 60 s, "medium", 8000.
+    func summarize(notes: [String], project: String, settings: AppSettings) async -> Result<SmartSummaryOutcome, SmartModeError>
+    /// "Bağlantıyı dene" with the stored key (works before the toggle is on); success text "1,8 sn".
+    func testConnection(model: String) async -> Result<String, SmartModeError>
+}
+```
+
+Capture wiring (§3.6.8 additions): `CaptureService.wantsSmartMode(_:settings:)` (enabled + `smartModeAutoOnLowConfidence`,
+not a command, `.smartModeSuggested` / confidence < 0.60 / `.noKindCue`); `requestSmartInterpretation(for:text:request:now:)`
+after `presentDraft` (never for forced-kind or "Sesle ertele" requests) → on success, when more confident, not a command,
+and `!draft.isEdited`, the draft is upgraded in place (`CaptureDraft.applySmart`, `item.smartModeUsed = true`, history
+`.smartMode`, countdown stopped, badge "Akıllı Mod ile yorumlandı"); `captureHeadless` step **4b**: after the on-device item
+is saved and reconciled, `interpret(timeout: 8 s)`; a better item is written with `store.update(id, event: .smartMode)`
+and reconciled again before answering (D34 — a slow or failed network never loses the capture).
+`FollowUpMessageSheet` "Akıllı taslak" and `ProjectDetailView` (Notlar) "Özetle" call the client from button actions;
+both are shown only when `SmartModeClient.shared.isReady(store.settings)` (checked on appear).
 
 #### 3.6.10 Router — exact
 
@@ -4163,7 +4365,8 @@ The widget extension and the iOS 18 Control are **not built in v1.0** (D30). The
 ### 4.3 Logging
 
 - `AsistLog.info/error(message, category)` → `os.Logger(subsystem: "com.gokhanbudak.asist", category:)` + ring buffer (300 lines) shown and shareable in Diagnostics (`ShareLink(item: lines.joined(separator: "\n"))`).
-- Categories: `app, store, notif, voice, intents, smart, location, widget, ui` (the last three unused until v1.1/v1.2).
+- Categories: `app, store, notif, voice, intents, smart, location, widget, ui` (`location`, `widget` unused until v1.1/v1.2; `smart` used since revision 3).
+- Smart Mode (revision 3) MUST NOT log the API key, request/response bodies, the sentence, item or note texts, or API error *messages* — only purpose, model id, HTTP status, API error *type*, duration and result codes.
 - MUST log: every reconcile (reason, planned, dropped, rate-limited, added, badge, timeSensitiveAllowed), every notification action (action id, item id, kind, found/not found, persisted yes/no), store load path + issues (incl. writerBuild), save failures, BG refresh start/end, re-sign detection, speech error domain/code.
 - MUST NOT log: full utterances, notes content.
 
@@ -4250,6 +4453,7 @@ Navigation uses only value-based `NavigationLink(value: Route.x)`; no destinatio
 | `NagSettingsView` | — | store | profile `Picker` per priority over `NagProfileKind.selectable`; read-only preview line per profile from `NagPlanner.chain(anchor: today 15:00 …, now: now)` formatted "15:00 · 15:10 · …"; "Kritik işler sessiz saatte de ısrar etsin"; badge mode; "Kilit ekranında konuyu göster" |
 | `TriggerSettingsView` | — | store, router | volume toggle + footer texts (§5.5 F7), restore-volume toggle, silence picker, on-device toggle; guide links `.guide(.backTap/.backTapListen/.siri/.focus/.banners)`; `SiriTipView(intent: KaydetIntent(), isVisible: $showTip)`; `ShortcutsLink()`; "Kestirmeler'i Aç" `Link(destination: URL(string: "shortcuts://")!)` |
 | `GuideView` | `kind` | — | numbered steps (03 §4.13 A, C, E + §3.7 recipes + "Kalıcı": Ayarlar › Bildirimler › Asist › Banner Stili › Kalıcı), SF Symbol per step, note "Menü adları iOS sürümüne göre küçük farklılık gösterebilir." |
+| `SmartModeSettingsView` (revision 3, WP13) | — | store, toasts | reached from `SettingsView` by `NavigationLink(destination:)` (no `Route` case); settings edit pattern; "Akıllı Mod" toggle (disabled until a key exists), "Emin olamadığımda Akıllı Mod'a sor", `SecureField` key + "Anahtarı kaydet" / "Anahtarı sil" (Keychain only), inline model `Picker` with doc 06 labels, "Bağlantıyı dene" + result text, "Gizlilik" text naming exactly what is sent to Anthropic |
 | `DataSettingsView` | — | store, toasts | Export: `ShareLink(item: exportFileURL)` (temp file `Asist-yedek-yyyy-MM-dd-HHmm.json`); Import: security-scoped `.fileImporter` (exact pattern below) → preview alert "n kayıt, m proje içe aktarılacak" → Birleştir / Değiştir; list of daily backups (restore from one = import replace); "Son silinenler" → `.recentlyDeleted`; note that backups and `Asist-acik-isler.txt` are in Dosyalar › Bu iPhone'da › Asist › Yedekler |
 | `RecentlyDeletedView` | — | store | `store.recentlyDeleted`; swipe "Geri getir" → `store.restoreDeleted` + toast (05b B8) |
 | `AppStatusView` | — | signing, permissions, engine, store | İmza bitişi (`signing.expiryDate`, else `estimatedExpiry` + "(tahmini)", else "bilinmiyor"), imza türü, permission rows with "Ayarları Aç", "Banner Stili: Kalıcı" row (`permissions.alertsPersistent`), data writer build, "Yeniden yükleme nasıl yapılır?" → KURULUM summary |
@@ -4454,7 +4658,7 @@ Typography (03 §7.3): only Dynamic Type styles — screen title `.largeTitle`; 
 | F8 | follow-up k=0 subtitle | "Geldi mi? · 2 gündür bekliyor"; "Son tarih: …" only when `hasTime` | "Geldi mi? Son tarih: Cuma" always |
 | F9 | last-of-day subtitle | "Bugünlük son hatırlatma · yarın sabah yine" | long form |
 | F10 | snoozed ≥ 3 subtitle | "3. erteleme · başka bir gün mü?" | "%d. kez ertelendi — …" |
-| F11 | long-tail subtitle | "Hâlâ açık · her sabah soracağım" | long form |
+| F11 | long-tail subtitle | "Hâlâ açık · her sabah soracağım"; waiting (Takip) item, fires at `followUpAskTime`: "Hâlâ gelmedi · her gün soracağım" (DEVIATION: "her sabah" was false at 16:00) | long form |
 | F12 | TTS times | 12-hour + daypart ("salı öğleden sonra üçte"); screens stay 24 h | "salı saat on beşte" |
 | F13 | terminology | "geciken" everywhere ("2 geciken", "GECİKENLER") | "gecikmiş" |
 | F14 | terminology | "Zamanı belirsiz" everywhere | "Zamansız görev" / "Tarihsiz" |
@@ -4579,7 +4783,7 @@ Worked examples (tests; `sun` = Sun 2026-09-27; S defaults; no mute):
 `plan(input)` steps:
 1. **Per-item candidates** — for every item with `isNotifiable`, `anchorDate != nil` and (`placeID == nil || dueDate != nil`): `A = anchorDate`, `K = item.profileKind(S)`, `P = S.nagProfiles[K]`, `c = priority == .critical`, `full = chain(A, P, K, c)`. Recurring items: `N1 = RecurrenceEngine.nextOccurrence(of: rule, time: clock(dueDate), after: dueDate, anchor: dueDate)`; drop chain elements `≥ N1`.
    - a) **First alert**: k = 0 if `A > N + 10 s` → `.first`.
-   - b) **Follow-ups**: the first `P.maxPendingFollowUps` chain elements with k ≥ 1 and `> N + 10 s` → `.nag`.
+   - b) **Follow-ups**: the first `P.maxPendingFollowUps` chain elements with k ≥ 1 and `> N + 10 s` → `.nag`. Each follow-up records its `pendingRank` (0 = first pending follow-up). **DEVIATION (carry-over):** an element `≤ N + 10 s` whose id has a pending date `p` in `input.pendingNagDates` with `N + 10 s < p ≤ element + 15 min` (i.e. the rate limiter had shifted it) is kept as a follow-up at `p` and is *fixed* in step 5 — otherwise a reconcile between the chain date and the shifted date would remove the pending request. The App fills `pendingNagDates` from the pending requests; empty = no carry-over.
    - c) **Day-tail (05a #2)**: if `K != .etkinlik` and (a) or (b) kept something: let `D` = day of the last kept element; for each of the **next 3 distinct calendar days after `D` that contain chain elements**, the first element of that day (k ≥ 1, `> N + 10 s`) → `.nag`.
    - d) **Pre-alerts**: `dueDate != nil`; for each `L` in `leadTimesMinutes`: `t = dueDate − L min`, `t > N + 60 s` → `.preAlert`, id `preAlert(id, minutes: L)`, category `ASIST_PRE`.
    - e) **Recurrence (D27)**: carrier rules `Rc` for interval 1 — daily → `[.daily(h, m)]`; weekly with weekdays → `[.weekly(foundationWeekday(w), h, m) for w]`; monthly with `monthDay` 1…28 → `[.monthly(monthDay, h, m)]`; otherwise `[]` (h:m = clock time of `dueDate`). `Fc` = earliest next fire strictly after `N` over `Rc` (`Calendar.nextDate(after:matching:matchingPolicy: .nextTime)`). If `Rc` is non-empty and (`Fc == N1` or (`snoozedUntil == nil` and `Fc == dueDate`)) → one `.carrier` per rule (suffix `d` / `w<fw>` / `m`, fireDate = that rule's next fire, content `recurrenceCarrierContent`), and when `Fc == dueDate` the one-shot (a) is removed (the carrier delivers it). Otherwise → `.occurrence` k0s for `RecurrenceEngine.occurrences(of:time:after: dueDate, anchor: dueDate, count: 7, calendar:)`: those `≤ N + 14 d`, plus the first one beyond 14 days (tier 4).
@@ -4587,9 +4791,9 @@ Worked examples (tests; `sun` = Sun 2026-09-27; S defaults; no mute):
 2. **Signing clamp (05b A1)**: if `signingExpiry = E` is set, drop `.nag` candidates with `fireDate > E − 5 min`. k0s, pre-alerts, occurrences, carriers and long-tails stay (they are the only safety net after a re-sign that is never followed by an app launch).
 3. **Attributes** (03 §3.2): normal & low → `.active` 0.5; high → `.timeSensitive` 0.8; critical → `.timeSensitive` 1.0; nags of items overdue at their fire date relevance 1.0; carriers/long-tails/occurrences/pre-alerts follow their item's priority; briefing/EOD `.active` 0.6; backup `.passive` 0.3 no sound; signing `.timeSensitive` 0.9; sentinels `.active` 0.7. `!allowTimeSensitive` → every `.timeSensitive` becomes `.active` (05b B7). **Mute (D32)**: every one-shot with `muted(fireDate)` except critical items' `.first` and `.signing` → `playsSound = false`, `.passive`. **Sounds (D37)**: high → `"asist-onemli.wav"`, critical → `"asist-kritik.wav"` for `.first`, `.occurrence`, `.carrier`, `.longTail` and for `.nag` with `k % 3 == 0`; everything else `soundName = nil`.
 4. **Reserved date candidates** (never compete with items): next **5** briefings at `S.briefingTime` (`briefingEnabled`; workdays only when `briefingWorkdaysOnly`; `> N + 60 s`; within 14 days); next 1 end-of-day at `S.endOfDayTime` (`endOfDayEnabled`, workday filter); backup weekly repeat (`.weekly(weekday: foundationWeekday(fromISO: S.backupReminderWeekday), …)`, when `backupReminderEnabled`); signing: every `SigningExpiryPlanner.warningDates(expiration: E, now: N, calendar: C)` + one expiry notice at `ceilToMinute(E + 60 s)` when `> N + 60 s` (only when `E` is set).
-5. **Rate limiter (05b C2)** over one-shot sounded notifications: *fixed* = every sounded `.once` candidate that is not `.nag` (k0s, pre-alerts, occurrences, reserved) — never moved or dropped; *movable* = sounded `.nag`, processed in (priority desc, fireDate asc, id asc). A movable nag is accepted at the earliest `t ∈ {fireDate, +1 min, …, +15 min}` such that `|t − a| ≥ 3 min` for every accepted/fixed sounded `a`, and every 60-minute window `[s, s + 60 min)` containing `t` holds ≤ 8 sounded notifications including `t` (check `s ∈ {t} ∪ {a : t − 60 min < a ≤ t}`); a shifted `t` must not be `quiet(t, c)` nor pass the signing clamp. No valid `t` → dropped (`rateLimitedCount`, not `droppedCount`, no sentinel). Silent (muted) and repeating notifications neither count nor move.
-6. **Tiers and budget** (lower = kept first): 0 = `.first`/`.preAlert`/`.occurrence` with fireDate ≤ N + 48 h, and `.longTail`; 1 = `.nag` k 1…4 ≤ N + 48 h, and `.carrier`; 2 = `.first`/`.preAlert`/`.occurrence` in (48 h, 14 d]; 3 = other `.nag` (incl. day-tail) ≤ 14 d; 4 = `.first`/`.preAlert`/`.occurrence` in (14 d, 400 d] (farther: not planned). Sort `(tier, fireDate, id)`; keep `input.itemBudget`; `droppedCount` / `earliestDroppedDate` from dropped candidates of tiers 0…3 only.
-7. **Item content** (after budget, so "next" refers to what is really pending): per item, sort its kept notifications by fireDate (repeating ones by their first fire); `nextFireDate` = the next kept one (nil if none), `isLastOfDay` = next exists on a later calendar day. `.first`/`.nag`/`.occurrence` → `itemContent` (waiting → `followUpContent`, event `.first` → `eventContent`); `.preAlert` → `preAlertContent`; `.longTail` → `longTailContent`; `.carrier` → `recurrenceCarrierContent`.
+5. **Rate limiter (05b C2)** over one-shot sounded notifications: *fixed* = every sounded `.once` candidate that is not `.nag` (k0s, pre-alerts, occurrences, reserved) — never moved or dropped; *movable* = sounded `.nag`, processed in (priority desc, fireDate asc, id asc). A movable nag is accepted at the earliest `t ∈ {fireDate, +1 min, …, +15 min}` such that `|t − a| ≥ 3 min` for every accepted/fixed sounded `a`, and every 60-minute window `[s, s + 60 min)` containing `t` holds ≤ 8 sounded notifications including `t` (check `s ∈ {t} ∪ {a : t − 60 min < a ≤ t}`); a shifted `t` must not be `quiet(t, c)` nor pass the signing clamp. No valid `t` → dropped (`rateLimitedCount`, not `droppedCount`, no sentinel). Silent (muted) and repeating notifications neither count nor move. Carried-over nags (step 1b) are fixed at their pending date.
+6. **Tiers and budget** (lower = kept first): 0 = `.first`/`.preAlert`/`.occurrence` with fireDate ≤ N + 48 h, and `.longTail`; 1 = the item's first 4 **pending** follow-ups (`pendingRank` 0…3) ≤ N + 48 h, and `.carrier` — **DEVIATION:** was "`.nag` k 1…4"; k counts from the anchor, so an item overdue since yesterday has only k ≥ 5 pending and all its nags fell to tier 3 below every first alert up to 14 days out (01a §5: "Tier 1: k = 1…4 whose anchor ≤ now + 48 h (includes overdue items)"). For an item not yet overdue the first 4 pending follow-ups are exactly k 1…4; `attempt` (ids, sounds, copy) stays the absolute k; 2 = `.first`/`.preAlert`/`.occurrence` in (48 h, 14 d]; 3 = other `.nag` (incl. day-tail) ≤ 14 d; 4 = `.first`/`.preAlert`/`.occurrence` in (14 d, 400 d] (farther: not planned). Sort `(tier, fireDate, id)`; keep `input.itemBudget`; `droppedCount` / `earliestDroppedDate` from dropped candidates of tiers 0…3 only.
+7. **Item content** (after budget, so "next" refers to what is really pending): per item, sort its kept notifications by fireDate (repeating ones by their first fire); `nextFireDate` = the next kept one (nil if none), `isLastOfDay` = next exists on a later calendar day. **DEVIATION:** `.occurrence` always uses `nextFireDate = nil`, `isLastOfDay = false` (k0 subtitle "<Gün HH:mm> · Proje", line 2 "Asist'i bir kez açarsan…") — its next kept element is the next occurrence days later, so "yarın sabah yine" / "devam edeceğim" would be false. `.first`/`.nag`/`.occurrence` → `itemContent` (waiting → `followUpContent`, event `.first` → `eventContent`); `.preAlert` → `preAlertContent`; `.longTail` → `longTailContent`; `.carrier` → `recurrenceCarrierContent`.
 8. **Reserved content and sentinels**: briefing → `AgendaBuilder.briefing(at:)` (nil → not planned), EOD → `AgendaBuilder.endOfDay(at:)`, backup → `backupContent`, signing → `signingContent` / `signingExpiredContent`. **Budget sentinel (05b B5)**: if `droppedCount > 0` and `earliestDroppedDate > N + 60 s`: a copy of that dropped notification (title/subtitle and body line 1 computed as in step 7; body line 2 replaced by `budgetSentinelLine(extraCount: droppedCount − 1)`) with id `asist.sentinel`, kind `.sentinel`, the same `iid`/`k`/category/thread, `.active` 0.7 with sound. **Horizon sentinel (05a #23, 05b B3)**: when at least one open notifiable item has an anchor: `H` = latest fireDate among kept `.once` item notifications; `t = H == nil ? dayStart(N + 13 d) : min(H + 60 min, dayStart(N + 13 d))`; `quiet(t)` → `quietExit(t)`; planned when `t > N + 60 s` with `horizonSentinelContent(openCount:)` (open notifiable items with an anchor).
 9. **Badge**: every `.once` gets `badge = badgeCount(items, at: fireDate)`; repeating ones `nil`; `badgeNow = badgeCount(items, at: N)`; `BadgeMode.off` → all badges 0 and `badgeNow` 0.
 10. **Output** sorted `(tier, fireDate, id)` (reserved notifications carry tier 0); fingerprints computed by the initializer.
@@ -4954,7 +5158,7 @@ v1.1+ work packages (Appendix B): WP12 widgets + Control (B.4), WP13 Smart Mode 
 31. `SFSpeechRecognizer(locale:)` is failable and may fall back to another language → check `recognizer.locale.identifier.hasPrefix("tr")`.
 32. App Intents: `static let title: LocalizedStringResource`, `static let description: IntentDescription?`, `init() {}` declared when a custom init exists, `openAppWhenRun` only via `@available(*, deprecated) extension`; no `supportedModes`; dialogs via `IntentDialog(LocalizedStringResource(stringLiteral: TurkishSpeech.dialogSafe(text)))`; every intent file that names an AsistCore symbol imports `AsistCore` (05a #15).
 33. `UNNotificationSound(named: UNNotificationSoundName("asist-kritik.wav"))` — file name with extension, file in the main bundle root.
-34. v1.0 imports **no** `CoreLocation`, `WidgetKit`, `Security` (Keychain) — those belong to Appendix B features.
+34. v1.0 imports **no** `CoreLocation`, `WidgetKit`, `Security` (Keychain) — those belong to Appendix B features. **Revision 3:** `import Security` is allowed in exactly one file, `App/SmartMode/KeychainStore.swift` (WP13; Security is a system framework, linked automatically — no `project.yml` change). No other Smart Mode file imports it.
 35. `.fileImporter` URLs: `startAccessingSecurityScopedResource()` / `stopAccessingSecurityScopedResource()` around the read; `import UniformTypeIdentifiers` for `UTType.json` (05a #12).
 36. JSON: store uses `.iso8601` both ways, **never changed** (§3.1); `JSONSerialization` only for the partial-recovery count check (§3.6.4).
 37. Files: data writes use `[.atomic, .completeFileProtectionUntilFirstUserAuthentication]`; never `.completeFileProtection` (actions/Siri run while locked); `previousFile` is written with `Data(contentsOf:)` + `write`, never `FileManager.copyItem` (05a #21).
@@ -5089,11 +5293,22 @@ Everything in 05a and 05b not listed here is adopted (see §12).
 
 **Verified-OK items of 05a §2** required no change and remain as written.
 
+### 12.1 Revision 3 — WP13 Akıllı Mod activated (2026-09-27, user decision)
+
+Appendix B.2 applied with these deltas (the implemented contract is §3.5.9 / §3.6.9; B.2 stays as history):
+- **Files (§2):** `AsistCore/SmartMode/SmartModeWire.swift`, `Tests/AsistCoreTests/SmartModeWireTests.swift`, `App/SmartMode/KeychainStore.swift`, `App/SmartMode/SmartModeClient.swift`, `App/UI/Settings/SmartModeSettingsView.swift`. Changed: `SettingsView` (link), `CaptureService`, `CaptureDraft`, `ConfirmationSheet` (badge + field re-sync), `FollowUpMessageSheet` ("Akıllı taslak"), `ProjectDetailView` ("Özetle").
+- **Security (§9 r34):** `import Security` only in `KeychainStore.swift`. No `project.yml` / entitlement change (Keychain without access group works with a free Apple ID).
+- **Composition (deviation from B.2):** no `AppEnvironment.smartMode` and no `CaptureService.init(smartMode:)` — the client is the lazy `SmartModeClient.shared` (never touches `AppEnvironment.shared`, so §4.1 r13 / §9 r45 hold). No new `Route` / `SheetRoute` cases: the settings screen is a `NavigationLink(destination:)`, the e-mail draft of B.2 became the Takip message draft inside `FollowUpMessageSheet`, and the project summary is an inline "AKILLI ÖZET" section on the Notlar tab (no `EmailDraftSheet` / `ProjectSummarySheet` / `EmailTone`).
+- **Wire (deviation from B.2.1):** schemas are `JSONValue` built in code and encoded with sorted keys (byte-stable) instead of JSON strings; `SmartParseResponse` gains `body`, `leadTimesMinutes`, `confidence` and drops `explanation`; `CommandDTO` gains `snoozeMinutes`; `EmailDraft` → `SmartDraftResponse { message }`; `ProjectSummary` → `SmartProjectSummary`; `SmartResponseReader` / `SmartHTTPStatus` make the doc 06 stop-reason and retry rules unit-testable on Linux.
+- **Parse timeouts (B.2 open decision):** the user's model is used for parsing; interactive budget 20 s (the on-device card is shown at once and upgraded in place), headless 8 s **after** the on-device item is saved and reconciled (so "3 saniyede yakala" and D34 hold); drafts/summaries 60 s, effort "medium", max_tokens 8000.
+- **Trigger:** `smartModeEnabled && smartModeAutoOnLowConfidence`, not a command, and `.smartModeSuggested` / confidence < 0.60 / `.noKindCue`. An upgrade needs a validated item that is more confident than the on-device parse and a card the user has not edited; a Smart Mode command reading is never auto-executed.
+- **Privacy / logging (§4.3):** off by default; the settings screen names exactly what is sent; the key lives only in the Keychain (never in `AppSettings`, exports or backups); logs are content-free.
+
 ---
 
 ## Appendix B — Deferred features (binding design, NOT compiled in v1.0)
 
-Activation rule: a deferred feature is built only by its own WP after v1.0 has been installed and used; the WP first re-applies the listed deltas to §2/§3/§7 of this document (as a revision 3 change log entry), then implements. Until then no v1.0 file may import `WidgetKit`, `CoreLocation` or `Security`, or reference any type below.
+Activation rule: a deferred feature is built only by its own WP after v1.0 has been installed and used; the WP first re-applies the listed deltas to §2/§3/§7 of this document (as a revision 3 change log entry), then implements. Until then no v1.0 file may import `WidgetKit`, `CoreLocation` or `Security`, or reference any type below. **B.2 (Akıllı Mod) was activated by revision 3 (§12.1); B.3 / B.4 / B.5 remain deferred.**
 
 ### B.1 Summary
 
@@ -5105,6 +5320,8 @@ Activation rule: a deferred feature is built only by its own WP after v1.0 has b
 | AlarmKit, Live Activity, calendar, digests | v2 | B.5 | — |
 
 ### B.2 Akıllı Mod — Claude API (v1.1, WP13)
+
+> **Activated by revision 3 (§12.1).** The implemented, binding signatures are §3.5.9 and §3.6.9; the text below is the original design kept for reference (its composition/sheet deltas were replaced as listed in §12.1).
 
 Deltas when activated: `AppEnvironment` gains `let smartMode: SmartModeClient` (constructed with `KeychainStore(service: KeychainStore.defaultService)`, no `shared` access in init); `CaptureService.init` gains `smartMode:` and `requestSmartInterpretation(for:)`; `CaptureDraft` regains `smartState`/`smartSuggestion` and the `smartAvailable:` init parameter; views `SmartModeSettingsView`, `EmailDraftSheet`, `ProjectSummarySheet` + route `.smartModeSettings`, sheets `.emailDraft(UUID)`, `.projectSummary(UUID)`; files `AsistCore/SmartMode/*`, `App/SmartMode/*`, `SmartModeTests.swift`. D15 facts stay binding (default `claude-opus-5` + `fallbacks: "default"` + beta header; options `claude-sonnet-5`, `claude-haiku-4-5`; no date suffixes). Open decision for v1.1 (05b §8): the *parse* fallback may default to the fastest model with an 8 s timeout so "3 saniyede yakala" holds; e-mail drafts and summaries keep Opus 5 and 60 s.
 

@@ -3,7 +3,19 @@ import Foundation
 import Observation
 import AsistCore
 
-enum AppTab: Hashable { case today, lists, projects, settings }
+enum AppTab: Hashable {
+    case today, lists, projects, settings
+
+    /// `asist://sekme/<kod>` target → tab.
+    init(deepLink tab: DeepLinkTab) {
+        switch tab {
+        case .today: self = .today
+        case .lists: self = .lists
+        case .projects: self = .projects
+        case .settings: self = .settings
+        }
+    }
+}
 
 /// backTap = guide A (headless "Asist Hızlı Kayıt"), backTapListen = guide A-alt ("Asist Dinle"), siri = C,
 /// focus = E, banners = "Bildirimler ekranda kalsın" (Banner Stili › Kalıcı, 05b A9).
@@ -59,6 +71,7 @@ enum PendingAction: Equatable {
     case followUpMessage(UUID)
     case settingsTriggers
     case dataSettings
+    case showTab(AppTab)
 }
 
 enum SheetRoute: Identifiable {
@@ -93,6 +106,9 @@ final class AppRouter {
     var settingsPath: [Route] = []
     var listFilter: ListFilter = .reminders
     var sheet: SheetRoute?
+    /// In-memory voice → "Klavye" hand-off (ListeningOverlay): the partial transcript the next ComposeSheet
+    /// starts with, added below any stored draft. Never persisted; ComposeSheet takes and clears it on load.
+    var composeSeedText: String?
     /// Set true only by AppEnvironment.sceneDidBecomeActive (store loaded && !onboardingCompleted); false by OnboardingView.
     var showOnboarding = false
     private(set) var pending: PendingAction?
@@ -119,6 +135,7 @@ final class AppRouter {
         case .endOfDay: request(.endOfDay)
         case .readAgenda: request(.readAgenda)
         case .settingsTriggers: request(.settingsTriggers)
+        case .tab(let tab): request(.showTab(AppTab(deepLink: tab)))
         }
     }
 
@@ -141,6 +158,18 @@ final class AppRouter {
         sheet = nil
         selectedTab = .today
         todayPath = []
+    }
+
+    /// `asist://sekme/<kod>`: closes the sheet and shows the root of `tab`.
+    func showTab(_ tab: AppTab) {
+        sheet = nil
+        selectedTab = tab
+        switch tab {
+        case .today: todayPath = []
+        case .lists: listsPath = []
+        case .projects: projectsPath = []
+        case .settings: settingsPath = []
+        }
     }
 
     func present(_ newSheet: SheetRoute) {

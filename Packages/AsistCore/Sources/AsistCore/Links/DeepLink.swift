@@ -1,6 +1,15 @@
 // FILE: Packages/AsistCore/Sources/AsistCore/Links/DeepLink.swift
 import Foundation
 
+/// Target of `asist://sekme/<kod>`: switches to that tab's root (Shortcuts "URL Aç", CI simulator screenshots).
+/// Codes are ASCII lowercase so they need no percent-encoding.
+public enum DeepLinkTab: String, CaseIterable, Equatable {
+    case today = "bugun"
+    case lists = "listeler"
+    case projects = "projeler"
+    case settings = "ayarlar"
+}
+
 public enum DeepLink: Equatable {
     case listen(kind: ItemKind?, projectID: UUID?)   // asist://dinle?tur=hatirlatma|gorev|not|takip&proje=<uuid>
     case compose                                     // asist://yaz
@@ -10,6 +19,7 @@ public enum DeepLink: Equatable {
     case endOfDay                                    // asist://gunsonu
     case readAgenda                                  // asist://oku
     case settingsTriggers                            // asist://ayarlar/tetikleyiciler
+    case tab(DeepLinkTab)                            // asist://sekme/bugun|listeler|projeler|ayarlar
 
     public static let scheme = "asist"
 
@@ -41,6 +51,9 @@ public enum DeepLink: Equatable {
         case .settingsTriggers:
             c.host = "ayarlar"
             c.path = "/tetikleyiciler"
+        case .tab(let tab):
+            c.host = "sekme"
+            c.path = "/" + tab.rawValue
         }
         return c.url ?? URL(string: "asist://bugun")!
     }
@@ -70,6 +83,9 @@ public enum DeepLink: Equatable {
             self = .readAgenda
         case "ayarlar":
             self = .settingsTriggers
+        case "sekme":
+            guard let first = pathParts.first, let tab = DeepLinkTab(rawValue: first.lowercased()) else { return nil }
+            self = .tab(tab)
         default:
             return nil
         }

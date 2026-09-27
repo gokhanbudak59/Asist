@@ -99,10 +99,14 @@ public enum NotificationCopy {
         return NotificationText(title: title, subtitle: parts.joined(separator: " · "), body: firstBodyLine(item))
     }
 
-    /// Daily repeating safety net (static text): subtitle "Hâlâ açık · her sabah soracağım" (05b F11).
+    /// Daily repeating safety net (static text): subtitle "Hâlâ açık · her sabah soracağım" (05b F11); a waiting
+    /// (Takip) item's long-tail fires at settings.followUpAskTime (default 16:00), not in the morning, so its subtitle
+    /// is "Hâlâ gelmedi · her gün soracağım".
     public static func longTailContent(item: Item, projectName: String?) -> NotificationText {
-        let title = item.kind == .waiting ? followUpTitle(item) : displayTitle(item)
-        return NotificationText(title: title, subtitle: "Hâlâ açık · her sabah soracağım", body: firstBodyLine(item))
+        let isWaiting = item.kind == .waiting
+        let title = isWaiting ? followUpTitle(item) : displayTitle(item)
+        let subtitle = isWaiting ? "Hâlâ gelmedi · her gün soracağım" : "Hâlâ açık · her sabah soracağım"
+        return NotificationText(title: title, subtitle: subtitle, body: firstBodyLine(item))
     }
 
     /// Repeating carrier of a recurring item (static text): subtitle "<Her gün 09:00> · tekrarlayan".

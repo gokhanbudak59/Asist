@@ -30,7 +30,7 @@ final class CommandExecutor {
 
     /// query → AgendaBuilder.answer → router.present(.agenda(answer)) + voice.speak(answer.text) (always spoken, D18);
     /// complete/cancel/snooze → FuzzyMatcher → .single/.ambiguous → router.present(.match(proposal)) + spoken
-    /// question; .none → toast "Buna uyan bir kayıt bulamadım."
+    /// question; .none → the sentence is kept as a task marked "Emin değilim" + toast with undo (nothing dropped).
     func execute(_ command: ParsedCommand, originalText: String, source: CaptureSource) async {
         var timeIsDefault = false
         if command.type == .snooze && command.date != nil {
@@ -147,6 +147,13 @@ final class CommandExecutor {
         }
     }
 
+    /// The snooze time `apply` will use for `proposal` on `item` (day-only "perşembeye ertele" keeps the item's
+    /// clock; a past date falls back like apply). Display only — MatchConfirmationSheet; never consumes the flag.
+    func snoozeTarget(for proposal: MatchProposal, item: Item, now: Date = Date()) -> Date {
+        CaptureSnoozeTiming.commandTarget(proposal.command, explicitTime: !dayOnlySnoozes.contains(proposal.id),
+                                          item: item, now: now, calendar: AppTime.calendar)
+    }
+
     // MARK: - Private
 
     private func presentAnswer(_ answer: SpokenAnswer) async {
@@ -189,10 +196,7 @@ final class CommandExecutor {
 
         guard let first = candidates.first, let firstItem = store.item(first) else {
             AsistLog.info("Komut için eşleşme bulunamadı: " + command.type.rawValue, .app)
-            let message = "Buna uyan bir kayıt bulamadım."
-            toasts.show(message)
-            Haptics.warning()
-            await speakIfVoice(message, source: source)
+            await keepUnmatched(originalText, source: source)
             return
         }
 
@@ -214,6 +218,26 @@ final class CommandExecutor {
             await speakIfVoice(prompt, source: source)
         } else {
             await speakIfVoice("Birden fazla kayıt buldum, ekrandan seçer misin?", source: source)
+        }
+    }
+
+    /// No open item matches ("PLC'deki eski blokları sil" meant as a new task): the sentence is never dropped
+    /// (03 §5.10 "Not olarak kaydet") — it is saved as a task marked "Emin değilim" and the toast's "Geri Al" removes
+    /// it. Not undoTranscript: re-running the text would parse the same command and end here again.
+    private func keepUnmatched(_ text: String, source: CaptureSource) async {
+        switch AppEnvironment.shared.capture.saveUnmatchedCommand(text: text, source: source) {
+        case .saved(let token):
+            toasts.show("Eşleşen kayıt bulamadım; “Emin değilim” olarak kaydettim.", undo: token, seconds: 6)
+            Haptics.warning()
+            await speakIfVoice("Eşleşen kayıt bulamadım; cümleni gözden geçirmen için kaydettim.", source: source)
+        case .keptInMemory:
+            toasts.show(CaptureCopy.keptInMemory, seconds: 6)
+            Haptics.error()
+        case .failed:
+            let message = "Buna uyan bir kayıt bulamadım."
+            toasts.show(message)
+            Haptics.warning()
+            await speakIfVoice(message, source: source)
         }
     }
 

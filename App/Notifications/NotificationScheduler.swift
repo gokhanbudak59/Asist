@@ -13,7 +13,13 @@ final class NotificationScheduler {
     /// in `desired`; add desired ids whose pending fingerprint (userInfo "fp") differs or is missing.
     /// Duplicate ids in `desired` → first wins (no Dictionary(uniqueKeysWithValues:)).
     /// `.once` with fireDate <= now is skipped. Returns number of add() calls.
-    @discardableResult func apply(_ desired: [PlannedNotification], now: Date, calendar: Calendar) async -> Int {
+    /// DEVIATION(01a §5.4, 04 §6.4): a pending one-shot missing from `desired` that fires within
+    /// NotificationStaleness.nearDueProtection is kept when it carries no item (briefing, end-of-day, signing,
+    /// sentinels) or its item is in `protectedItemIDs` — the planner drops candidates inside its 10 s / 60 s lead
+    /// margins, so a reconcile in that window (lock screen, BG refresh, an action) would otherwise delete a request
+    /// iOS was about to deliver. Closed/deleted items are not protected and are still removed.
+    @discardableResult func apply(_ desired: [PlannedNotification], now: Date, calendar: Calendar,
+                                  protectedItemIDs: Set<UUID>) async -> Int {
         var wanted: [String: PlannedNotification] = [:]
         var order: [String] = []
         var skippedUnmanaged = 0
@@ -34,11 +40,16 @@ final class NotificationScheduler {
         let pending = await center.pendingNotificationRequests()
         var unchanged = Set<String>()
         var toRemove: [String] = []
+        var keptNearDue: [String] = []
         for request in pending {
             let id = request.identifier
             guard NotificationID.isPlannerManaged(id) else { continue }
             guard let want = wanted[id] else {
-                toRemove.append(id)
+                if NotificationScheduler.keepsNearDue(request, now: now, protectedItemIDs: protectedItemIDs) {
+                    keptNearDue.append(id)
+                } else {
+                    toRemove.append(id)
+                }
                 continue
             }
             let pendingFingerprint = request.content.userInfo[NotificationUserInfoKey.fingerprint] as? String
@@ -48,6 +59,9 @@ final class NotificationScheduler {
         }
         if !toRemove.isEmpty {
             center.removePendingNotificationRequests(withIdentifiers: toRemove)
+        }
+        if !keptNearDue.isEmpty {
+            AsistLog.info("apply: çalmak üzere olan \(keptNearDue.count) bildirim korundu: " + keptNearDue.joined(separator: ", "), .notif)
         }
 
         var addCalls = 0
@@ -91,7 +105,10 @@ final class NotificationScheduler {
     }
 
     /// Keep only the newest delivered notification per open item thread; remove delivered of closed items.
-    func cleanupDelivered(openItemIDs: Set<UUID>) async {
+    /// Also removes delivered notifications of an open recurring item that are not newer than its last completed
+    /// occurrence (`lastOccurrenceDone`, item id → NotificationStaleness.lastOccurrenceDone): completing in the app
+    /// must not leave a nag whose "✓ Yaptım" would later complete the *next* occurrence.
+    func cleanupDelivered(openItemIDs: Set<UUID>, lastOccurrenceDone: [UUID: Date]) async {
         let delivered = await center.deliveredNotifications()
         var newestID: [UUID: String] = [:]
         var newestDate: [UUID: Date] = [:]
@@ -107,6 +124,11 @@ final class NotificationScheduler {
                 continue
             }
             let date = notification.date
+            if NotificationStaleness.isDeliveredBeforeCompletion(deliveredAt: date,
+                                                                lastOccurrenceDone: lastOccurrenceDone[itemID]) {
+                toRemove.append(id)
+                continue
+            }
             if let currentID = newestID[itemID], let currentDate = newestDate[itemID] {
                 if date > currentDate {
                     toRemove.append(currentID)
@@ -209,6 +231,17 @@ final class NotificationScheduler {
             return id
         }
         return NotificationID.itemID(from: request.identifier)
+    }
+
+    /// apply() guard: a non-repeating request firing within NotificationStaleness.nearDueProtection that belongs
+    /// to no item, or to an item in `protectedItemIDs`.
+    nonisolated private static func keepsNearDue(_ request: UNNotificationRequest, now: Date,
+                                                 protectedItemIDs: Set<UUID>) -> Bool {
+        guard let trigger = request.trigger else { return false }
+        let fire = nextDate(of: trigger)
+        guard NotificationStaleness.isNearDue(nextFire: fire, repeats: trigger.repeats, now: now) else { return false }
+        guard let owner = itemID(of: request) else { return true }
+        return protectedItemIDs.contains(owner)
     }
 
     nonisolated private static func belongs(_ request: UNNotificationRequest, to itemID: UUID) -> Bool {

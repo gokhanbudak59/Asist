@@ -29,6 +29,11 @@ struct SettingsView: View {
                                      subtitle: "Arkaya Dokunma, Siri, ses kısma tuşu",
                                      systemImage: Symbol.backTap)
                 }
+                // WP13: destination link (no Route case needed; the stack's value-based destinations are unaffected).
+                NavigationLink(destination: SmartModeSettingsView()) {
+                    SettingsRowLabel(title: "Akıllı Mod", subtitle: smartSubtitle(settings),
+                                     systemImage: Symbol.smartMode)
+                }
             }
 
             Section {
@@ -118,6 +123,13 @@ struct SettingsView: View {
         let high = "Önemli: " + s.profileForHigh.label
         let critical = "Kritik: " + s.profileForCritical.label
         return normal + " · " + high + " · " + critical
+    }
+
+    private func smartSubtitle(_ s: AppSettings) -> String {
+        if !s.smartModeEnabled {
+            return "Kapalı · Claude ile belirsiz cümleleri yorumlama"
+        }
+        return "Açık · " + SmartModeModelID.shortLabel(s.smartModeModel)
     }
 
     private func summarySubtitle(_ s: AppSettings) -> String {

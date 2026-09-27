@@ -194,20 +194,14 @@ struct MatchConfirmationSheet: View {
         case .cancel:
             return title + " silinsin mi?"
         case .snooze:
-            return title + " " + ClockDative.phrase(snoozeTarget, now: Date(), calendar: AppTime.calendar,
+            // Same target CommandExecutor.apply uses and speaks (day-only keeps the item's clock, past → fallback).
+            let now = Date()
+            let target = AppEnvironment.shared.commands.snoozeTarget(for: proposal, item: item, now: now)
+            return title + " " + ClockDative.phrase(target, now: now, calendar: AppTime.calendar,
                                                      includeToday: true) + " ertelensin mi?"
         case .query:
             return title + " bu mu?"
         }
-    }
-
-    /// Display only (CommandExecutor computes the real target): command.date ?? now + snoozeMinutes (default 60).
-    private var snoozeTarget: Date {
-        if let date = proposal.command.date {
-            return date
-        }
-        let minutes = max(1, proposal.command.snoozeMinutes ?? 60)
-        return AsistCalendar.ceilToMinute(Date().addingTimeInterval(TimeInterval(minutes * 60)))
     }
 
     // MARK: - Actions

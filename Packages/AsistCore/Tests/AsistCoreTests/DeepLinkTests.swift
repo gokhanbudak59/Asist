@@ -52,6 +52,9 @@ final class DeepLinkTests: XCTestCase {
         links.append(.endOfDay)
         links.append(.readAgenda)
         links.append(.settingsTriggers)
+        for tab in DeepLinkTab.allCases {
+            links.append(.tab(tab))
+        }
         return links
     }
 
@@ -76,9 +79,10 @@ final class DeepLinkTests: XCTestCase {
             case .endOfDay: seen.insert("endOfDay")
             case .readAgenda: seen.insert("readAgenda")
             case .settingsTriggers: seen.insert("settingsTriggers")
+            case .tab: seen.insert("tab")
             }
         }
-        XCTAssertEqual(seen.count, 8)
+        XCTAssertEqual(seen.count, 9)
     }
 
     func testItemKindCasesAreAllListed() {
@@ -114,6 +118,13 @@ final class DeepLinkTests: XCTestCase {
         XCTAssertEqual(DeepLink.readAgenda.url.absoluteString, "asist://oku")
         XCTAssertEqual(DeepLink.settingsTriggers.url.absoluteString, "asist://ayarlar/tetikleyiciler")
         XCTAssertEqual(DeepLink.listen(kind: nil, projectID: nil).url.absoluteString, "asist://dinle")
+    }
+
+    func testDocumentedTabURLStrings() {
+        XCTAssertEqual(DeepLink.tab(.today).url.absoluteString, "asist://sekme/bugun")
+        XCTAssertEqual(DeepLink.tab(.lists).url.absoluteString, "asist://sekme/listeler")
+        XCTAssertEqual(DeepLink.tab(.projects).url.absoluteString, "asist://sekme/projeler")
+        XCTAssertEqual(DeepLink.tab(.settings).url.absoluteString, "asist://sekme/ayarlar")
     }
 
     func testDocumentedItemURLStrings() {
@@ -179,6 +190,51 @@ final class DeepLinkTests: XCTestCase {
         let projectText = projectID.uuidString
         XCTAssertEqual(parse("asist://dinle?proje=" + projectText + "&tur=not"),
                        .listen(kind: .note, projectID: projectID))
+    }
+
+    func testParsesHandWrittenTabURLs() {
+        XCTAssertEqual(parse("asist://sekme/bugun"), .tab(.today))
+        XCTAssertEqual(parse("asist://sekme/listeler"), .tab(.lists))
+        XCTAssertEqual(parse("asist://sekme/projeler"), .tab(.projects))
+        XCTAssertEqual(parse("asist://sekme/ayarlar"), .tab(.settings))
+        // Case-insensitive host and code, trailing slash, extra path and unknown query items are tolerated.
+        XCTAssertEqual(parse("ASIST://SEKME/Listeler"), .tab(.lists))
+        XCTAssertEqual(parse("asist://sekme/projeler/"), .tab(.projects))
+        XCTAssertEqual(parse("asist://sekme/ayarlar/fazla"), .tab(.settings))
+        XCTAssertEqual(parse("asist://sekme/bugun?kaynak=ci"), .tab(.today))
+    }
+
+    func testTabLinksDoNotChangeExistingLinks() {
+        // "asist://bugun" and "asist://ayarlar…" keep their v1.0 meaning; only the "sekme" host is new.
+        XCTAssertEqual(parse("asist://bugun"), .today)
+        XCTAssertEqual(parse("asist://ayarlar"), .settingsTriggers)
+        XCTAssertEqual(parse("asist://ayarlar/tetikleyiciler"), .settingsTriggers)
+        XCTAssertNotEqual(DeepLink.tab(.today).url.absoluteString, DeepLink.today.url.absoluteString)
+        XCTAssertNotEqual(DeepLink.tab(.settings).url.absoluteString, DeepLink.settingsTriggers.url.absoluteString)
+    }
+
+    func testRejectsTabWithoutValidTarget() {
+        XCTAssertNil(parse("asist://sekme"))
+        XCTAssertNil(parse("asist://sekme/"))
+        XCTAssertNil(parse("asist://sekme/bilinmeyen"))
+        XCTAssertNil(parse("asist://sekme/tanitim"))
+        XCTAssertNil(parse("asist://sekme?sekme=bugun"))
+        XCTAssertNil(parse("asist://sekmeler/bugun"))
+    }
+
+    func testTabCodesAreExactDistinctAndASCII() {
+        XCTAssertEqual(DeepLinkTab.today.rawValue, "bugun")
+        XCTAssertEqual(DeepLinkTab.lists.rawValue, "listeler")
+        XCTAssertEqual(DeepLinkTab.projects.rawValue, "projeler")
+        XCTAssertEqual(DeepLinkTab.settings.rawValue, "ayarlar")
+        let codes = DeepLinkTab.allCases.map { $0.rawValue }
+        XCTAssertEqual(codes.count, 4)
+        XCTAssertEqual(Set(codes).count, codes.count)
+        for code in codes {
+            XCTAssertEqual(code, code.lowercased())
+            XCTAssertTrue(code.unicodeScalars.allSatisfy { $0.isASCII && $0.properties.isAlphabetic }, code)
+            XCTAssertEqual(DeepLinkTab(rawValue: code)?.rawValue, code)
+        }
     }
 
     // MARK: - Lenient degradation (unknown values fall back, never fail the whole link)

@@ -33,6 +33,11 @@ struct NagPlanCandidate {
     var soundName: String? = nil
     var tier: Int = 0
     var badge: Int? = nil
+    /// `.nag` from step 1b: index among the item's pending follow-ups (0 = the next pending nag). `Int.max` for
+    /// day-tail picks and every other kind. Step 6 tier 1 uses it instead of the absolute k (see `tier(of:)`).
+    var pendingRank: Int = Int.max
+    /// `.nag` carried over at the date it is already pending at (`PlanInput.pendingNagDates`): fixed in step 5.
+    var isCarried: Bool = false
 
     init(id: String, kind: PlannedNotification.Kind, itemSlot: Int?, itemID: UUID?, attempt: Int, fireDate: Date,
          rule: PlannedNotification.Rule, priority: Priority, leadMinutes: Int, threadID: String, categoryID: String) {
@@ -135,6 +140,8 @@ enum PlanPostPass {
     static let windowSeconds = 60 * 60
     static let maxSoundedPerWindow = 8
     static let maxShiftMinutes = 15
+    /// Tier 1 holds the first this-many pending follow-ups of each item (≤ 48 h).
+    static let tierOneFollowUps = 4
     static let shortHorizon: TimeInterval = 48 * 3600
     static let mediumHorizon: TimeInterval = 14 * 86_400
     static let farHorizon: TimeInterval = 400 * 86_400
@@ -345,10 +352,12 @@ enum PlanPostPass {
     /// earliest t ∈ {fireDate, +1 min … +15 min} with ≥ 3 min to every accepted/fixed sounded notification and
     /// ≤ 8 sounded in every 60-minute window containing t; a shifted t must not be quiet nor pass the signing
     /// clamp. Nags without a valid t are removed; the return value is their count (`rateLimitedCount`).
+    /// DEVIATION(04 §6.4 step 5): a carried-over nag (`isCarried`, already pending at its shifted date) is fixed.
     static func applyRateLimiter(_ candidates: inout [NagPlanCandidate], fixed reserved: [NagPlanCandidate],
                                  rules: NagTimeRules, signingExpiry: Date?) -> Int {
         var times: [Int] = []
-        for candidate in candidates where candidate.isOnce && candidate.playsSound && candidate.kind != .nag {
+        for candidate in candidates where candidate.isOnce && candidate.playsSound
+            && (candidate.kind != .nag || candidate.isCarried) {
             times.append(seconds(candidate.fireDate))
         }
         for candidate in reserved where candidate.isOnce && candidate.playsSound {
@@ -359,7 +368,7 @@ enum PlanPostPass {
         var movable: [Int] = []
         for index in candidates.indices {
             let candidate = candidates[index]
-            if candidate.kind == .nag && candidate.isOnce && candidate.playsSound {
+            if candidate.kind == .nag && !candidate.isCarried && candidate.isOnce && candidate.playsSound {
                 movable.append(index)
             }
         }
@@ -464,9 +473,14 @@ enum PlanPostPass {
 
     // MARK: Step 6 — tiers and budget
 
-    /// 0 = first/preAlert/occurrence ≤ 48 h and long-tails; 1 = nag k 1…4 ≤ 48 h and carriers;
-    /// 2 = first/preAlert/occurrence in (48 h, 14 d]; 3 = other nags ≤ 14 d; 4 = first/preAlert/occurrence in
-    /// (14 d, 400 d]; nil = not planned. Reserved notifications carry tier 0.
+    /// 0 = first/preAlert/occurrence ≤ 48 h and long-tails; 1 = the item's first 4 pending follow-ups ≤ 48 h and
+    /// carriers; 2 = first/preAlert/occurrence in (48 h, 14 d]; 3 = other nags ≤ 14 d; 4 = first/preAlert/occurrence
+    /// in (14 d, 400 d]; nil = not planned. Reserved notifications carry tier 0.
+    /// DEVIATION(04 §6.4 step 6): tier 1 was "`.nag` k 1…4". k counts from the anchor, so an item overdue since
+    /// yesterday has only k ≥ 5 pending and all its nags fell to tier 3, below every first alert up to 14 days out —
+    /// under budget pressure the forgotten items went silent. Tier 1 now takes the first 4 *pending* follow-ups
+    /// (`pendingRank` 0…3; for an item that is not yet overdue these are exactly k 1…4), restoring 01a §5 "Tier 1:
+    /// k = 1…4 whose anchor ≤ now + 48 h (includes overdue items)". `attempt` (ids, sounds, copy) is unchanged.
     static func tier(of candidate: NagPlanCandidate, now: Date) -> Int? {
         let delta = candidate.fireDate.timeIntervalSince(now)
         switch candidate.kind {
@@ -480,7 +494,7 @@ enum PlanPostPass {
             if delta <= farHorizon { return 4 }
             return nil
         case .nag:
-            if delta <= shortHorizon && candidate.attempt >= 1 && candidate.attempt <= 4 { return 1 }
+            if delta <= shortHorizon && candidate.pendingRank < tierOneFollowUps { return 1 }
             if delta <= mediumHorizon { return 3 }
             return nil
         case .briefing, .endOfDay, .backup, .signing, .sentinel, .horizon:

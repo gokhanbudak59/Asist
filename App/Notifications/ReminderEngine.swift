@@ -138,11 +138,13 @@ final class ReminderEngine {
         let input = makeInput(now: now, allowTimeSensitive: allowTimeSensitive)
         let plan = NagPlanner.plan(input)
 
-        // 4: diff-apply.
-        let added = await scheduler.apply(plan.notifications, now: now, calendar: calendar)
+        // 4: diff-apply (near-due one-shots of open items and reserved notifications survive the planner margins).
+        let added = await scheduler.apply(plan.notifications, now: now, calendar: calendar,
+                                          protectedItemIDs: nearDueProtectedItemIDs(now: now))
 
         // 5: delivered cleanup (store re-read after the await).
-        await scheduler.cleanupDelivered(openItemIDs: openItemIDs())
+        await scheduler.cleanupDelivered(openItemIDs: openItemIDs(),
+                                         lastOccurrenceDone: lastOccurrenceDoneByItem(now: now))
 
         // 6: badge.
         do {
@@ -191,6 +193,28 @@ final class ReminderEngine {
             ids.insert(item.id)
         }
         return ids
+    }
+
+    /// Items whose pending one-shots firing within NotificationStaleness.nearDueProtection the diff-apply keeps.
+    private func nearDueProtectedItemIDs(now: Date) -> Set<UUID> {
+        var ids = Set<UUID>()
+        for item in store.items where NotificationStaleness.protectsNearDue(item, now: now) {
+            ids.insert(item.id)
+        }
+        return ids
+    }
+
+    /// Open recurring item → date of its last completed occurrence (future-dated entries from a clock change are
+    /// skipped). Delivered notifications not newer than it are stale and get removed.
+    private func lastOccurrenceDoneByItem(now: Date) -> [UUID: Date] {
+        let latestAllowed = now.addingTimeInterval(NotificationStaleness.futureSkew)
+        var map: [UUID: Date] = [:]
+        for item in store.items where item.isNotifiable {
+            if let done = NotificationStaleness.lastOccurrenceDone(of: item), done <= latestAllowed {
+                map[item.id] = done
+            }
+        }
+        return map
     }
 
     private static func isAuthorized(_ status: UNAuthorizationStatus) -> Bool {
@@ -260,6 +284,17 @@ final class ReminderEngine {
         let kindText = event.kind.isEmpty ? "-" : event.kind
         let settings = store.settings
 
+        // DEVIATION(04 §6.3): an action from a notification of a recurring occurrence that the user has already
+        // completed (e.g. in the app, after this nag was delivered) must not complete / snooze the *next*
+        // occurrence. Nothing is mutated; returning the id lets step 5 clear the stale delivered notification and
+        // re-add this item's pending requests.
+        if ReminderEngine.isOccurrenceAction(action), let id = event.itemID, let item = store.item(id),
+           NotificationStaleness.isCompletedOccurrence(item, deliveredAt: event.deliveredAt, now: now) {
+            AsistLog.info("Bayat bildirim eylemi yok sayıldı: \(action) öğe=\(id.uuidString) (oluşum zaten tamamlanmış)", .notif)
+            logAction(action, itemText, kindText, found: true, persisted: false)
+            return id
+        }
+
         switch action {
         case NotificationActionID.done, NotificationActionID.followUpReceived:
             guard let id = event.itemID else {
@@ -316,6 +351,19 @@ final class ReminderEngine {
             return nil
 
         case NotificationActionID.endOfDayMove:
+            // DEVIATION(04 §6 ASIST_EOD_MOVE): an end-of-day notification from an earlier day (still in
+            // Notification Center) must not move *today's* tasks — the move is computed from the tap time. Nothing
+            // is moved; the review screen is left pending and a passive notice says so.
+            if NotificationStaleness.isStaleEndOfDay(deliveredAt: event.deliveredAt, now: now, calendar: calendar) {
+                AsistLog.info("Gün sonu taşıma yok sayıldı: bildirim önceki bir güne ait", .notif)
+                AppEnvironment.shared.router.request(.endOfDay)
+                await scheduler.addUnmanaged(id: ReminderEngine.staleEndOfDayFeedbackID,
+                                             text: ReminderEngine.staleEndOfDayFeedbackText, after: 2,
+                                             categoryID: NotificationCategoryID.system, interruption: .passive,
+                                             itemID: nil)
+                logAction(action, itemText, kindText, found: true, persisted: false)
+                return nil
+            }
             await moveEndOfDay(now: now)
             logAction(action, itemText, kindText, found: true, persisted: true)
             return nil
@@ -389,6 +437,9 @@ final class ReminderEngine {
         if id == NotificationID.backup {
             return PendingAction.dataSettings
         }
+        if id == ReminderEngine.staleEndOfDayFeedbackID {
+            return PendingAction.endOfDay
+        }
         if id == NotificationID.movedFeedback || id == NotificationID.horizonSentinel
             || id.hasPrefix(NotificationID.signing(minuteKey: "")) {
             return PendingAction.today
@@ -397,6 +448,20 @@ final class ReminderEngine {
             return PendingAction.openItem(itemID)
         }
         return PendingAction.today
+    }
+
+    /// Actions that complete or re-anchor the item's current occurrence (subject to the stale-occurrence check).
+    private static func isOccurrenceAction(_ action: String) -> Bool {
+        return action == NotificationActionID.done
+            || action == NotificationActionID.followUpReceived
+            || isRescheduleAction(action)
+    }
+
+    /// Passive notice after a stale end-of-day action (unmanaged id; body tap opens the end-of-day review).
+    private static let staleEndOfDayFeedbackID = NotificationID.unmanagedPrefix + "eodstale"
+    private static var staleEndOfDayFeedbackText: NotificationText {
+        NotificationText(title: "Gün sonu", subtitle: "",
+                         body: "Bu gün sonu bildirimi önceki bir güne aitti; hiçbir iş taşınmadı. Gözden geçirmek için dokun.")
     }
 
     private static func isRescheduleAction(_ action: String) -> Bool {

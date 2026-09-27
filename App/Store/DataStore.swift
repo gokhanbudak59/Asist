@@ -675,14 +675,25 @@ final class DataStore {
         line += ", sonuç kayıt=" + String(result.items.count)
         line += ", proje=" + String(result.projects.count)
         AsistLog.info(line, .store)
+        let previousIssue = loadIssue
         if mode == .replace && !hasNewerWriterIssue {
             loadIssue = nil                            // the user restored a known state deliberately
         }
         guard result != data else { return true }
+        let previous = data
         data = result
         save()
+        guard lastSaveError == nil else {
+            // Not written: undo in memory too, so "verilerin değişmedi" (DataImportFlow / restore) is true and a
+            // later retry of save() never writes an import the user was told had failed. save() leaves `data`
+            // untouched on failure, so this is exactly the pre-import state.
+            data = previous
+            loadIssue = previousIssue
+            AsistLog.error("İçe aktarma kaydedilemedi; önceki veri korunuyor", .store)
+            return false
+        }
         onChange?(.all)
-        return lastSaveError == nil
+        return true
     }
 
     // MARK: - Private: commit
@@ -894,13 +905,12 @@ private func completedCopy(of item: Item, now: Date, calendar: Calendar, fallbac
     return (item: copy, result: DoneResult.completed)
 }
 
-/// Roll-over of a missed recurring occurrence (D27). nil = nothing to do. An explicit snooze that still lies
-/// in the future is respected (the user chose that time).
+/// Roll-over of a missed recurring occurrence (D27). nil = nothing to do. A snooze never blocks it: a roll-over
+/// needs an occurrence N1 with due < N1 ≤ now, so a still-future snooze already reaches past N1 — the planner drops
+/// such a snooze alert (chain elements ≥ N1), and keeping the old due date would leave the new occurrence with no
+/// nags. resetNagState() clears the stale snooze; the new occurrence is planned from its own due date.
 private func rolledOverCopy(of item: Item, now: Date, calendar: Calendar) -> Item? {
     guard item.status == .open, let rule = item.recurrence, let due = item.dueDate, due < now else { return nil }
-    if let snoozed = item.snoozedUntil, snoozed > now {
-        return nil
-    }
     let time = ClockTime(minutesOfDay: AsistCalendar.minuteOfDay(due, calendar: calendar))
     guard let latest = RecurrenceEngine.latestOccurrence(of: rule, time: time, after: due, upTo: now,
                                                          calendar: calendar),

@@ -1,7 +1,8 @@
 // WP9 (04 §5.2; 03 §4.6, §7.12 compose.*; 05b F2): keyboard entry "Yaz".
 // Multi-line field focused on open, live parser preview (300 ms debounce), 56 pt "Ekle" (high confidence → saved
 // directly with an undo toast) or "Önizle" (lower confidence → the confirmation card). The unfinished text is kept
-// in meta.composeDraft and comes back next time. With request.snoozeItemID the text is only a new time ("Ertele").
+// in meta.composeDraft and comes back next time (plain "Yaz" only: a project/note compose keeps its text in the
+// sheet, so drafts never leak between contexts). With request.snoozeItemID the text is only a new time ("Ertele").
 import SwiftUI
 import AsistCore
 
@@ -10,6 +11,7 @@ struct ComposeSheet: View {
 
     @Environment(DataStore.self) private var store
     @Environment(AppRouter.self) private var router
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var text = ""
     @State private var preview: CapturePreview?
@@ -74,6 +76,11 @@ struct ComposeSheet: View {
         }
         .onDisappear {
             persistDraft()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // A presented sheet does not disappear on backgrounding; a suspended (or app-switcher) app may then
+            // be killed, so the unfinished text is saved as soon as the scene leaves the foreground.
+            if phase != .active { persistDraft() }
         }
     }
 
@@ -141,6 +148,9 @@ struct ComposeSheet: View {
 
     private var isSnooze: Bool { request.snoozeItemID != nil }
 
+    /// Only the plain "Yaz" context (no forced kind, project or snooze) owns the persistent meta.composeDraft.
+    private var usesStoredDraft: Bool { request == ListenRequest() }
+
     private var trimmed: String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -192,8 +202,22 @@ struct ComposeSheet: View {
     private func loadDraft() {
         guard !loaded else { return }
         loaded = true
-        if !isSnooze, let saved = store.meta.composeDraft, !saved.isEmpty {
-            text = saved
+        var value = ""
+        if usesStoredDraft, let saved = store.meta.composeDraft,
+           !saved.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            value = saved
+        }
+        // Voice → "Klavye" hand-off: the partial transcript is added below an earlier unsent draft, never
+        // replacing it.
+        if let seed = router.composeSeedText {
+            router.composeSeedText = nil
+            let spoken = seed.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !isSnooze && !spoken.isEmpty {
+                value = value.isEmpty ? spoken : value + "\n" + spoken
+            }
+        }
+        if !value.isEmpty {
+            text = value
         }
     }
 
@@ -227,6 +251,7 @@ struct ComposeSheet: View {
         focused = false
         let listenRequest = request
         let snooze = isSnooze
+        let storedDraft = usesStoredDraft
         if case .compose? = router.sheet {
             router.dismissSheet()
         }
@@ -238,7 +263,7 @@ struct ComposeSheet: View {
             } else {
                 await env.capture.addFromKeyboard(value, request: listenRequest)
             }
-            if !snooze && env.store.meta.composeDraft != nil {
+            if storedDraft && env.store.meta.composeDraft != nil {
                 env.store.updateMeta { meta in
                     meta.composeDraft = nil
                 }
@@ -255,7 +280,7 @@ struct ComposeSheet: View {
     /// Unfinished text survives closing the sheet (03 §4.6); a submitted text is cleared after it was handled.
     @MainActor
     private func persistDraft() {
-        guard !submitted, !isSnooze else { return }
+        guard !submitted, usesStoredDraft else { return }
         let value: String? = trimmed.isEmpty ? nil : text
         if store.meta.composeDraft != value {
             store.updateMeta { meta in

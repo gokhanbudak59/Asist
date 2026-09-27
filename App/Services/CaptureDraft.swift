@@ -5,6 +5,18 @@ import Observation
 import UIKit
 import AsistCore
 
+/// WP13: state of the background Akıllı Mod interpretation of a low-confidence card (shown as a badge).
+enum SmartDraftState: Equatable {
+    case idle
+    case working
+    /// The card now shows Smart Mode's reading ("Akıllı Mod ile yorumlandı").
+    case applied
+    /// Valid answer but the card was kept (not better, a command, or the user already edited the card).
+    case unchanged(String)
+    /// Network / key / refusal …: the on-device result stays (Turkish user text).
+    case failed(String)
+}
+
 /// Model behind ConfirmationSheet (reference type so chips edit it in place; v1.1 Smart Mode updates it too).
 ///
 /// Countdown rules (03 §4.5, D10):
@@ -12,13 +24,16 @@ import AsistCore
 /// - level `.confirm` (0.60 ..< 0.80) → 6 s (never shorter than the user's setting);
 /// - level `.review`, `needsTime`, VoiceOver running or the setting "Kapalı" → no countdown (0).
 /// Any touch on the card calls `touch()` (or sets `autoSaveActive = false`) and stops the countdown for good.
+/// A Smart Mode upgrade (`applySmart`) never starts a countdown: `level` stays the on-device level.
 @MainActor
 @Observable
 final class CaptureDraft: Identifiable {
     nonisolated let id: UUID         // nonisolated: read by SheetRoute.id / Identifiable from any context
     let heardText: String
     let source: CaptureSource
-    let parse: ParseResult
+    /// On-device parse; replaced by Smart Mode's validated reading in `applySmart`.
+    private(set) var parse: ParseResult
+    /// On-device confirmation level (drives the countdown; never changed afterwards).
     let level: ConfirmationLevel
     var item: Item                   // edited by chips
     var needsTime: Bool
@@ -30,9 +45,18 @@ final class CaptureDraft: Identifiable {
     var autoSaveActive: Bool
     /// Set by commit/discard; prevents double handling on sheet dismissal.
     var isResolved: Bool = false
+    /// The capture context the card came from (forced kind / project, e.g. "Bu projeye sesli not");
+    /// "Tekrar söyle" listens again with it.
+    var request: ListenRequest = ListenRequest()
 
-    /// The item exactly as the parser/ItemFactory proposed it (`revertToProposal()` undoes chip edits).
-    let proposedItem: Item
+    /// The item exactly as the parser/ItemFactory (or Smart Mode) proposed it (`revertToProposal()` undoes chip edits).
+    private(set) var proposedItem: Item
+    /// WP13 badge state.
+    var smartState: SmartDraftState = .idle
+    /// Level of Smart Mode's proposal once applied (nil = on-device reading).
+    private(set) var smartLevel: ConfirmationLevel? = nil
+    /// Incremented by every `applySmart` so the sheet re-syncs its local text fields.
+    private(set) var smartRevision: Int = 0
     /// `AppSettings.autoSaveSeconds` at the moment the card was created (clamped 0…10).
     let autoSaveSetting: Int
     /// Moment the card was created.
@@ -85,6 +109,28 @@ final class CaptureDraft: Identifiable {
     /// Low-confidence card ("Bunu mu demek istedin?", 03 §5.5).
     var isLowConfidence: Bool {
         level == .review
+    }
+
+    /// Level used when the card is saved without confirmation (03 principle 3): Smart Mode's level once applied.
+    var effectiveLevel: ConfirmationLevel {
+        smartLevel ?? level
+    }
+
+    /// WP13: replaces the card's content with Smart Mode's validated reading. Callers check `isResolved` and
+    /// `isEdited` first (a user edit is never overwritten). A running countdown stops: changed content is never
+    /// auto-saved unseen (a swipe / background still saves it, 03 principle 3).
+    func applySmart(parse newParse: ParseResult, proposal: CaptureProposal) {
+        autoSaveActive = false
+        parse = newParse
+        item = proposal.item
+        proposedItem = proposal.item
+        needsTime = proposal.needsTime
+        alternativeTimes = proposal.alternativeTimes
+        appliedDefaultTime = proposal.appliedDefaultTime
+        defaultedToToday = proposal.defaultedToToday
+        smartLevel = proposal.level
+        smartState = .applied
+        smartRevision += 1
     }
 
     // MARK: - Countdown rule

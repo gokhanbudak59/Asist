@@ -46,7 +46,8 @@ jobs:
         run: |
           mkdir -p "$GITHUB_WORKSPACE/ci-out"
           swift build --build-tests 2>&1 | tee "$GITHUB_WORKSPACE/ci-out/swift-build.log"
-          swift test --skip-build --parallel 2>&1 | tee "$GITHUB_WORKSPACE/ci-out/swift-test.log"
+          # Seri çalıştırma: print() çıktısı (CORPUS SUMMARY satırları) günlükte görünür; --parallel gizler.
+          swift test --skip-build 2>&1 | tee "$GITHUB_WORKSPACE/ci-out/swift-test.log"
       - name: Hata özeti
         if: failure()
         run: |
@@ -167,9 +168,78 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  simulator:
+    name: Simülatör duman testi + ekran görüntüleri (macOS 26)
+    runs-on: macos-26
+    timeout-minutes: 40
+    env:
+      XCODE_MAJOR: "26"
+      XCODEGEN_VERSION: "2.46.0"
+      XCODEGEN_SHA256: "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Xcode seç
+        env:
+          XCODE_REQ: ${{ inputs.xcode }}
+        run: bash Scripts/ci/select-xcode.sh "$XCODE_REQ"
+
+      - name: XcodeGen kur (sabit sürüm + SHA256)
+        run: bash Scripts/ci/install-xcodegen.sh
+
+      - name: Xcode projesini üret
+        run: |
+          mkdir -p "$RUNNER_TEMP/sim/derleme"
+          xcodegen generate --spec project.yml 2>&1 | tee "$RUNNER_TEMP/sim/derleme/xcodegen.log"
+          if grep -q "settings found" "$RUNNER_TEMP/sim/derleme/xcodegen.log"; then
+            echo "::error::XcodeGen SettingPresets bulunamadı; kurulum bozuk."
+            exit 1
+          fi
+
+      - name: Derle (iphonesimulator, Debug, imzasız)
+        id: derle-sim
+        run: |
+          FMT="cat"
+          if command -v xcbeautify >/dev/null; then FMT="xcbeautify --renderer github-actions"; fi
+          xcodebuild \
+            -project Asist.xcodeproj \
+            -scheme Asist \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$RUNNER_TEMP/DDsim" \
+            ARCHS="$(uname -m)" \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/sim/derleme/xcodebuild-sim.log" | $FMT
+
+      - name: Derleme hata özeti
+        if: failure() && steps.derle-sim.outcome == 'failure'
+        run: bash Scripts/ci/error-summary.sh "$RUNNER_TEMP/sim/derleme/xcodebuild-sim.log"
+
+      - name: Simülatörde çalıştır + ekran görüntüleri
+        run: |
+          bash Scripts/ci/simulator-smoke.sh \
+            "$RUNNER_TEMP/DDsim/Build/Products/Debug-iphonesimulator/Asist.app" \
+            "$RUNNER_TEMP/sim"
+
+      - name: Yükle — simülatör günlükleri ve ekran görüntüleri
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sim-gunlukleri
+          path: ${{ runner.temp }}/sim
+          retention-days: 7
+          if-no-files-found: ignore
+
   publish-logs:
     name: Günlükleri yayınla (ci-logs dalı)
-    needs: [core-tests, ios]
+    needs: [core-tests, ios, simulator]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -185,6 +255,7 @@ jobs:
         env:
           CORE: ${{ needs.core-tests.result }}
           IOS: ${{ needs.ios.result }}
+          SIM: ${{ needs.simulator.result }}
           RUN: ${{ github.run_number }}
           SHA: ${{ github.sha }}
           REPO: ${{ github.repository }}
@@ -200,7 +271,7 @@ jobs:
           fi
           D="out/runs/$RUN"
           mkdir -p "$D"
-          { echo "run: $RUN"; echo "sha: $SHA"; echo "core-tests: $CORE"; echo "ios: $IOS"; } > "$D/summary.txt"
+          { echo "run: $RUN"; echo "sha: $SHA"; echo "core-tests: $CORE"; echo "ios: $IOS"; echo "simulator: $SIM"; } > "$D/summary.txt"
           ls -R logs > "$D/files.txt" 2>&1 || true
           CL=logs/core-gunlukleri
           if ls "$CL"/*.log >/dev/null 2>&1; then
@@ -214,8 +285,32 @@ jobs:
             tail -n 300 "$IL/xcodebuild.log" | sed -E 's#/Users/runner/work/[^/]+/[^/]+/##g' > "$D/ios-tail.txt"
           fi
           if [ -f "$IL/xcodegen.log" ]; then cp "$IL/xcodegen.log" "$D/xcodegen.log"; fi
+          SL=logs/sim-gunlukleri
+          if [ -d "$SL" ]; then
+            if ls "$SL"/*.png >/dev/null 2>&1; then
+              mkdir -p "$D/screens"
+              cp "$SL"/*.png "$D/screens/"
+            fi
+            for f in "$SL"/*.log "$SL"/*.txt; do
+              [ -f "$f" ] || continue
+              cp "$f" "$D/sim-$(basename "$f")"
+            done
+            if ls "$SL"/crash/* >/dev/null 2>&1; then
+              mkdir -p "$D/sim-crash"
+              cp "$SL"/crash/* "$D/sim-crash/"
+            fi
+            if [ -f "$SL/seed/asist-data-okunur.json" ]; then cp "$SL/seed/asist-data-okunur.json" "$D/sim-seed.json"; fi
+            if [ -f "$SL/derleme/xcodebuild-sim.log" ]; then
+              grep -E "(error|warning): " "$SL/derleme/xcodebuild-sim.log" | sed -E 's#/Users/runner/work/[^/]+/[^/]+/##g' | sort | uniq | head -2000 > "$D/sim-build-errors.txt" || true
+              tail -n 150 "$SL/derleme/xcodebuild-sim.log" | sed -E 's#/Users/runner/work/[^/]+/[^/]+/##g' > "$D/sim-build-tail.txt" || true
+            fi
+          fi
+          # Dal boyutu: ağaçta yalnız son 10 çalışmanın ekran görüntüleri kalır (eskiler git geçmişinde durur).
+          for old in $(ls -1 out/runs 2>/dev/null | grep -E '^[0-9]+$' | sort -n | head -n -10 || true); do
+            rm -rf "out/runs/$old/screens"
+          done
           rm -rf out/latest
           cp -R "$D" out/latest
           git -C out add -A
-          git -C out commit -q -m "CI günlükleri #$RUN (core: $CORE, ios: $IOS)"
+          git -C out commit -q -m "CI günlükleri #$RUN (core: $CORE, ios: $IOS, sim: $SIM)"
           git -C out push -q "$URL" HEAD:ci-logs

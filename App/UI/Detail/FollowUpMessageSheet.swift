@@ -13,6 +13,10 @@ struct FollowUpMessageSheet: View {
 
     @State private var text = ""
     @State private var loaded = false
+    /// WP13 "Akıllı taslak": shown only when Smart Mode is on and a key is stored (checked on appear).
+    @State private var smartReady = false
+    @State private var smartBusy = false
+    @State private var smartStatus: String? = nil
 
     /// Explicit: private @State storage must not narrow the memberwise initializer's access (SheetHost.swift).
     init(itemID: UUID) {
@@ -57,6 +61,25 @@ struct FollowUpMessageSheet: View {
                     SectionHeader(title: "MESAJ")
                 } footer: {
                     Text("Göndermeden önce metni düzenleyebilirsin.")
+                }
+                if smartReady {
+                    Section {
+                        Button {
+                            requestSmartDraft(item)
+                        } label: {
+                            HStack(spacing: 10) {
+                                Label(smartButtonTitle, systemImage: Symbol.smartMode)
+                                Spacer()
+                                if smartBusy {
+                                    ProgressView()
+                                }
+                            }
+                            .frame(minHeight: 44)
+                        }
+                        .disabled(smartBusy)
+                    } footer: {
+                        Text(smartStatus ?? "Akıllı Mod bu takibin başlığını, kişisini, proje adını, notlarını ve hitap adını Anthropic'e gönderip kibar bir mesaj taslağı hazırlar; mevcut metnin yerine geçer.")
+                    }
                 }
                 Section {
                     ShareLink(item: text) {
@@ -105,8 +128,38 @@ struct FollowUpMessageSheet: View {
     private func load() {
         guard !loaded else { return }
         loaded = true
+        smartReady = SmartModeClient.shared.isReady(store.settings)
         guard let item = store.item(itemID) else { return }
         text = FollowUpMessageSheet.template(for: item, allItems: store.items)
+    }
+
+    private var smartButtonTitle: String {
+        smartBusy ? "Taslak hazırlanıyor…" : "Akıllı taslak"
+    }
+
+    /// WP13: replaces the template with a Smart Mode draft; failures leave the text untouched and explain why.
+    private func requestSmartDraft(_ item: Item) {
+        guard !smartBusy else { return }
+        smartBusy = true
+        smartStatus = nil
+        let settings = store.settings
+        let projectName = store.projectName(for: item)
+        let now = Date()
+        let calendar = AppTime.calendar
+        Task { @MainActor in
+            let result = await SmartModeClient.shared.draftMessage(for: item, projectName: projectName,
+                                                                   settings: settings, now: now, calendar: calendar)
+            smartBusy = false
+            switch result {
+            case .success(let message):
+                text = message
+                smartStatus = "Akıllı Mod ile hazırlandı. Göndermeden önce kontrol et."
+                Haptics.success()
+            case .failure(let error):
+                smartStatus = error.userMessage
+                Haptics.warning()
+            }
+        }
     }
 
     private func askAgain(workdays: Int) {

@@ -28,6 +28,8 @@ struct ConfirmationSheet: View {
     /// Programmatic picker preloads must not count as a user choice.
     @State private var ignoreDateChange = false
     @State private var ignoreTimeChange = false
+    /// Sheet height; dragging it to another detent is a touch that stops the countdown.
+    @State private var detent: PresentationDetent = .medium
     @FocusState private var focusedField: Field?
 
     private enum Field: Hashable {
@@ -44,7 +46,8 @@ struct ConfirmationSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 heardSection
-                if draft.level == .review {
+                smartBanner
+                if draft.level == .review && draft.smartState != .applied {
                     lowConfidenceHint
                 }
                 VStack(alignment: .leading, spacing: 6) {
@@ -100,14 +103,18 @@ struct ConfirmationSheet: View {
             .padding(Metrics.padding)
         }
         .scrollDismissesKeyboard(.interactively)
+        .modifier(StopCountdownOnScroll(action: { stopCountdown() }))
         .safeAreaInset(edge: .bottom, spacing: 0) {
             buttonBar
         }
         .simultaneousGesture(TapGesture().onEnded {
             stopCountdown()
         })
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.medium, .large], selection: $detent)
         .presentationDragIndicator(.visible)
+        .onChange(of: detent) { _, _ in
+            stopCountdown()
+        }
         .task(id: draft.id) {
             await runCountdown()
         }
@@ -121,6 +128,12 @@ struct ConfirmationSheet: View {
         }
         .onChange(of: personText) { _, newValue in
             applyPerson(newValue)
+        }
+        .onChange(of: draft.item.title) { _, newValue in
+            flattenTitle(newValue)
+        }
+        .onChange(of: draft.smartRevision) { _, _ in
+            resyncAfterSmartUpgrade()
         }
         .onChange(of: pickedDate) { _, newValue in
             if ignoreDateChange {
@@ -186,6 +199,52 @@ struct ConfirmationSheet: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: Metrics.cornerRadius).fill(Color.asistReview.opacity(0.18)))
+    }
+
+    /// WP13 badge: "Akıllı Mod yorumluyor…" / "Akıllı Mod ile yorumlandı" / why the card was kept.
+    @ViewBuilder
+    private var smartBanner: some View {
+        switch draft.smartState {
+        case .idle:
+            EmptyView()
+        case .working:
+            HStack(spacing: 10) {
+                ProgressView()
+                Text("Akıllı Mod yorumluyor…")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+        case .applied:
+            smartNote(title: "Akıllı Mod ile yorumlandı", detail: "Kontrol et; doğruysa kaydet.",
+                      symbol: Symbol.smartMode, tint: Color.purple)
+        case .unchanged(let message):
+            smartNote(title: "Akıllı Mod", detail: message, symbol: Symbol.smartMode, tint: Color.secondary)
+        case .failed(let message):
+            smartNote(title: "Akıllı Mod kullanılamadı", detail: message, symbol: "exclamationmark.triangle",
+                      tint: Color.orange)
+        }
+    }
+
+    private func smartNote(title: String, detail: String, symbol: String, tint: Color) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: symbol)
+                .foregroundStyle(tint)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                Text(detail)
+                    .font(.footnote)
+                    .foregroundStyle(Color.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: Metrics.cornerRadius).fill(tint.opacity(0.12)))
+        .accessibilityElement(children: .combine)
     }
 
     private var kindLine: some View {
@@ -680,6 +739,7 @@ struct ConfirmationSheet: View {
     @MainActor
     private func setDay(_ day: Date) {
         touch()
+        draft.appliedDefaultTime = false    // the user chose the time: no "Zaman söylemedin…"
         let calendar = AppTime.calendar
         let time: ClockTime
         if let due = draft.item.dueDate {
@@ -696,6 +756,7 @@ struct ConfirmationSheet: View {
     @MainActor
     private func setTime(_ clock: ClockTime) {
         touch()
+        draft.appliedDefaultTime = false    // the user chose the time: no "Zaman söylemedin…"
         let calendar = AppTime.calendar
         let now = Date()
         var date: Date
@@ -718,6 +779,7 @@ struct ConfirmationSheet: View {
     @MainActor
     private func setAllDay() {
         touch()
+        draft.appliedDefaultTime = false    // the user chose the time: no "Zaman söylemedin…"
         let calendar = AppTime.calendar
         let day = draft.item.dueDate ?? Date()
         draft.item.dueDate = AsistCalendar.date(on: day, at: store.settings.defaultDayTime, calendar: calendar)
@@ -730,6 +792,7 @@ struct ConfirmationSheet: View {
     @MainActor
     private func setInstant(_ date: Date) {
         touch()
+        draft.appliedDefaultTime = false    // the user chose the time: no "Zaman söylemedin…"
         draft.item.dueDate = date
         draft.item.hasTime = true
         draft.item.snoozedUntil = nil
@@ -742,6 +805,7 @@ struct ConfirmationSheet: View {
     @MainActor
     private func setUndated() {
         touch()
+        draft.appliedDefaultTime = false    // the user chose the time: no "Zaman söylemedin…"
         if draft.item.kind == .reminder || draft.item.kind == .waiting {
             draft.item.kind = .task
         }
@@ -759,6 +823,7 @@ struct ConfirmationSheet: View {
     @MainActor
     private func applyAlternative(_ alternative: Date) {
         touch()
+        draft.appliedDefaultTime = false    // the user chose the time: no "Zaman söylemedin…"
         let calendar = AppTime.calendar
         if let due = draft.item.dueDate,
            AsistCalendar.minuteOfDay(due, calendar: calendar) != AsistCalendar.minuteOfDay(alternative, calendar: calendar) {
@@ -822,6 +887,15 @@ struct ConfirmationSheet: View {
         draft.item.leadTimesMinutes = Array(Set(leads)).sorted()
     }
 
+    /// Return in the (vertical-axis) title field inserts a newline instead of submitting: turn it into a space
+    /// and close the keyboard, as ItemDetailView does — titles never carry line breaks (rows, notifications).
+    @MainActor
+    private func flattenTitle(_ value: String) {
+        guard value.contains("\n") else { return }
+        draft.item.title = value.replacingOccurrences(of: "\n", with: " ")
+        focusedField = nil
+    }
+
     @MainActor
     private func applyPerson(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -874,6 +948,16 @@ struct ConfirmationSheet: View {
     }
 
     // MARK: - Lifecycle
+
+    /// WP13: Smart Mode replaced the (unedited) card content → local field copies follow the new item.
+    @MainActor
+    private func resyncAfterSmartUpgrade() {
+        personText = draft.item.person ?? ""
+        showDatePicker = false
+        showTimePicker = false
+        dayConfirmed = false
+        timeConfirmed = false
+    }
 
     @MainActor
     private func setUp() {
@@ -939,16 +1023,25 @@ struct ConfirmationSheet: View {
         dismissIfShown()
     }
 
-    /// "Tekrar söyle": this card is dropped silently (resolved, so onDismiss does not save it) and listening
-    /// restarts; VoiceCoordinator closes the sheet first (05a #18).
+    /// "Tekrar söyle" (03 §4.5): listening restarts with the card's own context (project / note mic) and the new
+    /// result replaces this card. Until then the card is only set aside (CaptureService.beginRedo — resolved, so the
+    /// sheet's onDismiss does not save it): if the retry ends without a transcript (silence, Vazgeç, a failure, a
+    /// busy voice) the same card comes back with its edits. VoiceCoordinator closes the sheet first (05a #18).
     @MainActor
     private func redo() {
+        guard !draft.isResolved else { return }
         stopCountdown()
         focusedField = nil
-        draft.isResolved = true
         let voice = self.voice
+        let current = draft
+        let request = current.request
         Task { @MainActor in
-            await voice.startListening(ListenRequest())
+            // Busy voice (a volume ×2 start just began): leave the card untouched and on screen.
+            guard voice.phase == .idle || voice.phase == .speaking, !current.isResolved else { return }
+            let capture = AppEnvironment.shared.capture
+            capture.beginRedo(current)
+            await voice.startListening(request)
+            capture.restoreRedoDraftIfNeeded()        // no-op when a transcript replaced the card
         }
     }
 
@@ -973,6 +1066,28 @@ private struct RecurrencePreset: Identifiable {
     let id: String
     let title: String
     let rule: Recurrence
+}
+
+/// "Any touch stops the countdown" (03 §4.5) includes scrolling the card: a scroll never fires the TapGesture.
+/// iOS 18+: the scroll phase (no gesture interference); iOS 17: a simultaneous drag of at least 5 pt, so chip taps
+/// stay taps.
+private struct StopCountdownOnScroll: ViewModifier {
+    let action: () -> Void
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) {
+            content.onScrollPhaseChange { _, newPhase in
+                if newPhase != .idle {
+                    action()
+                }
+            }
+        } else {
+            content.simultaneousGesture(DragGesture(minimumDistance: 5).onChanged { _ in
+                action()
+            })
+        }
+    }
 }
 
 /// Ring inside "Kaydet" that empties while the auto-save countdown runs.

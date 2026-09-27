@@ -126,6 +126,7 @@ struct ItemDetailView: View {
     @Environment(AppRouter.self) private var router
     @Environment(ToastCenter.self) private var toasts
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     private enum DetailField: Hashable {
         case title, notes, person
@@ -161,6 +162,9 @@ struct ItemDetailView: View {
     @State private var draftsLoaded = false
     @State private var showDeleteConfirm = false
     @State private var showDictationHint = false
+    /// Project ids that existed when "Yeni Proje" opened the editor; the project that appears when that sheet
+    /// closes is assigned to this item (nil = no pending "Yeni Proje").
+    @State private var newProjectBaseline: Set<UUID>? = nil
     @FocusState private var focusedField: DetailField?
 
     /// Explicit: private @State/@FocusState/@Environment storage must not narrow the synthesized memberwise
@@ -240,6 +244,21 @@ struct ItemDetailView: View {
         }
         .onDisappear {
             commitAll()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // iOS keeps the first responder and the view on backgrounding, so neither the focus change nor
+            // onDisappear fires, and a suspended (or app-switcher) app may then be killed: save the drafts.
+            // `.inactive` (app switcher, Notification Center, a banner) saves too, but must not reset a title
+            // the user just emptied to retype — an empty title is only reverted on `.background`.
+            guard phase != .active else { return }
+            if phase == .background || !titleDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                commitTitle()
+            }
+            commitNotes()
+            commitPerson()
+        }
+        .onChange(of: router.sheet?.id) { oldValue, newValue in
+            if oldValue != nil && newValue == nil { assignNewProjectIfCreated() }
         }
         .onChange(of: focusedField) { oldValue, newValue in
             if oldValue == .title && newValue != .title { commitTitle() }
@@ -344,12 +363,17 @@ struct ItemDetailView: View {
                         .foregroundStyle(Color.secondary)
                 }
                 Spacer(minLength: 8)
-                Button("Doğru") {
+                Button {
                     DetailItemActions.confirmReview(item.id, store: store, toasts: toasts)
+                } label: {
+                    // Frame + content shape inside the label: a frame outside a borderless button only adds
+                    // layout space, not hit area (44 pt rule, 03 §1).
+                    Text("Doğru")
+                        .font(.headline)
+                        .frame(minWidth: 64, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
-                .font(.headline)
                 .buttonStyle(.borderless)
-                .frame(minWidth: 64, minHeight: 44)
             }
         }
     }
@@ -554,6 +578,7 @@ struct ItemDetailView: View {
             Divider()
             Button {
                 focusedField = nil
+                newProjectBaseline = Set(store.projects.map { $0.id })
                 router.present(.projectEditor(nil))
             } label: {
                 Label("Yeni Proje", systemImage: "plus")
@@ -941,6 +966,15 @@ struct ItemDetailView: View {
         applyEdit("proje", event: .edited) { edited in
             edited.projectID = projectID
         }
+    }
+
+    /// "Yeni Proje" from this item's project menu: once the editor closes, the newly created project (if any;
+    /// "Vazgeç" creates none) becomes this item's project, like the capture card's "Yeni proje:" chip.
+    private func assignNewProjectIfCreated() {
+        guard let baseline = newProjectBaseline else { return }
+        newProjectBaseline = nil
+        guard let created = store.projects.first(where: { !baseline.contains($0.id) }) else { return }
+        setProject(created.id)
     }
 
     private func clearDue() {

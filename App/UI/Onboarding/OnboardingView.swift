@@ -434,10 +434,15 @@ struct OnboardingView: View {
         }
     }
 
+    /// Onboarding is closed first: the volume ×2 trigger refuses to arm while `showOnboarding` is true, and
+    /// dismissing the cover does not change scenePhase. The explicit `apply` arms it even when updateSettings
+    /// emits nothing ("Tanıtımı tekrar göster": the flag is already true); it is idempotent and keeps every
+    /// arming guard (enabled, scene active, idle).
     private func finish() {
+        router.showOnboarding = false
         store.updateSettings { settings in
             settings.onboardingCompleted = true
         }
-        router.showOnboarding = false
+        AppEnvironment.shared.voice.apply(settings: store.settings)
     }
 }

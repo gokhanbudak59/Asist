@@ -755,7 +755,7 @@ Durumlar:
 
 | Kural | Varsayılan | Ayar |
 |---|---|---|
-| Konuşma hiç başlamazsa | 6 sn sonra `Seni duyamadım. Tekrar denemek için dokun.` | — |
+| Konuşma hiç başlamazsa | 6 sn sonra `Seni duyamadım. Tekrar dene.` | — |
 | Konuşmadan sonra sessizlik | 1,8 sn → otomatik dur | 1,2 / 1,8 / 2,5 / 3,5 sn ("Sessizlik süresi") |
 | En uzun dinleme | 45 sn (son 10 sn'de halka geri sayar) | — |
 | Proje sesli notu | 60 sn; `Devam et` ile ekleme | P1: kesintisiz uzun not |
@@ -863,7 +863,7 @@ Referans an: **27 Eylül 2026 Pazar 10:00, Europe/Istanbul**. Bu tablo ayrışt�
 |---|---|
 | Tek güçlü eşleşme | Onay sayfası: `"Ahmet'i ara" tamamlandı mı?` + `[Evet, tamamlandı] [Hayır]` (56 pt). Aynı anda sesli sorar ve 4 sn "evet / tamam / hayır" dinler. |
 | 2–3 aday | `Hangisi?` listesi, büyük satırlar; sesli: `İki kayıt buldum, ekrandan seçer misin?` |
-| Eşleşme yok | `Buna uyan bir kayıt bulamadım.` + `[Not olarak kaydet]` |
+| Eşleşme yok | Cümle otomatik olarak "Emin değilim" işaretli görev olarak kaydedilir: `Eşleşen kayıt bulamadım; “Emin değilim” olarak kaydettim.` + `[Geri Al]` (kayıt başarısızsa `Buna uyan bir kayıt bulamadım.`) |
 
 3. **Silme her zaman onay ister** (tek eşleşme olsa bile). Tamamlama ve erteleme onaydan sonra Geri Al toast'uyla uygulanır.
 4. Siri üzerinden tamamlama/silme v1'de yoktur (yanlış eşleşme riski); Siri "Bunun için Asist'i açmalısın" der ve uygulamayı açar (P1'de değerlendirilir).
@@ -1260,7 +1260,7 @@ Biçim belirteçleri: `%@` metin, `%d` tamsayı, `%1$@ %2$@` sıralı. Anahtarla
 | `listen.hint.3` | Örnek: "Kocaeli projesine not: ışık perdesi tekrar ölçülecek" |
 | `listen.hint.4` | Örnek: "Bugün ne var?" |
 | `listen.hint.5` | Örnek: "Her pazartesi 9'da haftalık raporu hatırlat" |
-| `listen.no_speech` | Seni duyamadım. Tekrar denemek için dokun. |
+| `listen.no_speech` | Seni duyamadım. Tekrar dene. |
 | `listen.max_reached` | Süre doldu; söylediklerini aldım. |
 | `listen.draft_saved` | Dinleme yarıda kaldı; söylediklerini taslak olarak sakladım. |
 | `listen.err.generic` | Dinleme başlatılamadı. Klavyeyle yazabilirsin. |

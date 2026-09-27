@@ -245,10 +245,12 @@ struct NagItemDraft {
     var longTail: NagLongTailRequest? = nil
 }
 
-/// A chain element picked for planning (k = index in the full chain).
+/// A chain element picked for planning (k = index in the full chain). `carried`: `date` is the pending trigger
+/// date of an element the rate limiter had shifted (PlanInput.pendingNagDates), not the chain date.
 struct NagChainPick {
     var k: Int
     var date: Date
+    var carried: Bool = false
 }
 
 /// Result of scanning one chain: (a) first alert, (b) follow-ups, (c) day-tail.
@@ -313,19 +315,28 @@ extension NagPlanner {
         }
 
         // (a) first alert, (b) follow-ups, (c) day-tail.
+        let itemID = item.id
+        let pendingNags = input.pendingNagDates
         let scan = scanChain(anchor: anchor, profile: profile, profileKind: profileKind, critical: critical,
-                             rules: rules, cutoff: cutoff, stopAt: nextOccurrence)
+                             rules: rules, cutoff: cutoff, stopAt: nextOccurrence,
+                             pendingDate: { (k: Int) -> Date? in pendingNags[NotificationID.chain(itemID, k)] })
         if let first = scan.first {
             draft.candidates.append(NagPlanCandidate(id: NotificationID.chain(item.id, 0), kind: .first, itemSlot: slot,
                                                   itemID: item.id, attempt: 0, fireDate: first, rule: .once,
                                                   priority: item.priority, leadMinutes: 0, threadID: thread,
                                                   categoryID: category))
         }
-        for pick in scan.followUps + scan.dayTail {
-            draft.candidates.append(NagPlanCandidate(id: NotificationID.chain(item.id, pick.k), kind: .nag,
-                                                  itemSlot: slot, itemID: item.id, attempt: pick.k,
-                                                  fireDate: pick.date, rule: .once, priority: item.priority,
-                                                  leadMinutes: 0, threadID: thread, categoryID: category))
+        let followUpCount = scan.followUps.count
+        for (index, pick) in (scan.followUps + scan.dayTail).enumerated() {
+            var nag = NagPlanCandidate(id: NotificationID.chain(item.id, pick.k), kind: .nag, itemSlot: slot,
+                                       itemID: item.id, attempt: pick.k, fireDate: pick.date, rule: .once,
+                                       priority: item.priority, leadMinutes: 0, threadID: thread,
+                                       categoryID: category)
+            if index < followUpCount {
+                nag.pendingRank = index                         // step 6 tier 1: first 4 pending follow-ups
+            }
+            nag.isCarried = pick.carried
+            draft.candidates.append(nag)
         }
 
         // (d) pre-alerts (category ASIST_PRE: "✓ Yaptım" only, never re-anchors the item).
@@ -366,12 +377,16 @@ extension NagPlanner {
     }
 
     /// Walks the chain lazily and stops once the day-tail is complete (the walked part is a prefix of the full chain).
+    /// `pendingDate(k)`: the pending trigger date of chain element k (PlanInput.pendingNagDates), nil if unknown.
     static func scanChain(anchor: Date, profile: NagProfile, profileKind: NagProfileKind, critical: Bool,
-                          rules: NagTimeRules, cutoff: Date, stopAt: Date?) -> NagChainScan {
+                          rules: NagTimeRules, cutoff: Date, stopAt: Date?,
+                          pendingDate: (Int) -> Date?) -> NagChainScan {
         var scan = NagChainScan()
         var generator = NagChainGenerator(anchor: anchor, profile: profile, kind: profileKind,
                                           isCritical: critical, rules: rules)
         let maxFollowUps = max(0, profile.maxPendingFollowUps)
+        let carryWindow = TimeInterval(PlanPostPass.maxShiftMinutes * 60)
+        let carryFloor = cutoff.addingTimeInterval(-carryWindow)
         var k = -1
         var inTail = false
         var tailReferenceDay: Date? = nil
@@ -383,7 +398,16 @@ extension NagPlanner {
                 if date > cutoff { scan.first = date }
                 continue
             }
-            if date <= cutoff { continue }
+            if date <= cutoff {
+                // DEVIATION(04 §6.4 step 1b): an element the rate limiter moved past the cutoff (≤ 15 min later)
+                // is still pending at its shifted date; keep it there (fixed in step 5) instead of letting a
+                // reconcile between the two dates remove it.
+                if !inTail && scan.followUps.count < maxFollowUps && date > carryFloor,
+                   let pending = pendingDate(k), pending > cutoff, pending <= date.addingTimeInterval(carryWindow) {
+                    scan.followUps.append(NagChainPick(k: k, date: pending, carried: true))
+                }
+                continue
+            }
             if !inTail {
                 if scan.followUps.count < maxFollowUps {
                     scan.followUps.append(NagChainPick(k: k, date: date))
@@ -563,7 +587,9 @@ extension NagPlanner {
     // DEVIATION(04 §6.4 step 7): `nextFireDate` also considers the next fire of the item's kept repeating rules
     // (long-tail, carriers) after this notification — ordering repeating rules only by their first fire would make
     // a later one-shot claim "nothing follows" although the daily repeat continues. Occurrences are rendered as
-    // the first alert of that occurrence (item copy with dueDate = occurrence, no snooze); event occurrences use
+    // the first alert of that occurrence (item copy with dueDate = occurrence, no snooze) with nextFireDate nil and
+    // isLastOfDay false (k0 subtitle "<Gün HH:mm> · Proje", line 2 "Asist'i bir kez açarsan…"): the next element is
+    // the next occurrence days later, so "yarın sabah yine" / "devam edeceğim" would be false. Event occurrences use
     // `eventContent` like the event's own first alert.
     /// Fills title/subtitle/body of an item notification from NotificationCopy.
     static func applyContent(_ candidate: inout NagPlanCandidate, item: Item, projectName: String?,
@@ -586,7 +612,12 @@ extension NagPlanner {
                 text = NotificationCopy.eventContent(item: subject, projectName: projectName, calendar: calendar)
                 candidate.bodyHasFollowLine = false
             } else {
-                let next = timeline.nextFire(after: candidate.fireDate, rules: rules)
+                // Occurrences: nothing of this item follows until the next occurrence (days or weeks later) or a
+                // reconcile re-anchors it, so neither "yarın sabah yine" nor "devam edeceğim" may be promised.
+                var next: Date? = nil
+                if candidate.kind != .occurrence {
+                    next = timeline.nextFire(after: candidate.fireDate, rules: rules)
+                }
                 var lastOfDay = false
                 if let nextDate = next {
                     lastOfDay = rules.startOfDay(nextDate) > rules.startOfDay(candidate.fireDate)

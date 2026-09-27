@@ -107,11 +107,15 @@ public struct PlanInput {
     public var allowTimeSensitive: Bool
     public var totalBudget: Int
     public var reservedSlots: Int
+    /// Trigger dates of the pending chain-nag requests (`NotificationID.chain`, k ≥ 1), keyed by id; empty = none
+    /// known. DEVIATION(04 §6.4 step 1b): a nag the rate limiter shifted past its chain date stays planned at its
+    /// pending date (≤ 15 min later) instead of being removed by a reconcile that runs between the two dates.
+    public var pendingNagDates: [String: Date]
 
     public init(items: [Item], projects: [Project], places: [Place], settings: AppSettings, now: Date,
                 calendar: Calendar, signingExpiry: Date?, locationSlotsUsed: Int = 0,
                 allowTimeSensitive: Bool = true, totalBudget: Int = 64,
-                reservedSlots: Int = PlanInput.defaultReservedSlots) {
+                reservedSlots: Int = PlanInput.defaultReservedSlots, pendingNagDates: [String: Date] = [:]) {
         self.items = items
         self.projects = projects
         self.places = places
@@ -123,6 +127,7 @@ public struct PlanInput {
         self.allowTimeSensitive = allowTimeSensitive
         self.totalBudget = totalBudget
         self.reservedSlots = reservedSlots
+        self.pendingNagDates = pendingNagDates
     }
 
     /// Slots available to item notifications (chain, day-tail, pre-alerts, long-tails, occurrences, carriers).

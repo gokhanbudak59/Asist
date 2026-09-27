@@ -467,6 +467,22 @@ final class NagPlannerTests: XCTestCase {
         XCTAssertEqual(notes.filter { $0.kind == .occurrence }.map { $0.id }, expected)
     }
 
+    func testOccurrenceCopyPromisesNoMorningRepeat() {
+        // Every 2 days → no carrier; several one-shot occurrences 2 days apart. The next kept element after an
+        // occurrence is the next occurrence, so the copy must not say "yarın sabah yine" / "devam edeceğim".
+        var item = makeItem(1, title: "Filtreleri kontrol et", due: "2026-09-29T09:00")
+        item.recurrence = Recurrence(frequency: .daily, interval: 2)
+        let result = plan([item], now: "2026-09-29T10:00")
+        let occurrences = itemNotifications(result, item.id).filter { $0.kind == .occurrence }
+        XCTAssertGreaterThanOrEqual(occurrences.count, 2)
+        for occurrence in occurrences {
+            XCTAssertFalse(occurrence.subtitle.contains("Bugünlük son"), occurrence.id)
+            XCTAssertTrue(occurrence.subtitle.contains("09:00"), "k0 subtitle keeps the occurrence time: \(occurrence.subtitle)")
+            XCTAssertEqual(occurrence.body.components(separatedBy: "\n").last,
+                           "Asist'i bir kez açarsan hatırlatmaya devam ederim.")
+        }
+    }
+
     // MARK: - Tiers, budget and sentinels
 
     func testBudgetKeepsTierOrderAndSentinelCopiesEarliestDrop() {
@@ -537,6 +553,32 @@ final class NagPlannerTests: XCTestCase {
         assertUniqueIDs(result)
     }
 
+    func testOverdueItemKeepsItsNextFourPendingNagsInTierOne() {
+        // Overdue since Monday 15:00 (Nazik): k0…k4 are past, the pending follow-ups start at k5 (Tue 10:30).
+        let overdue = makeItem(1, title: "Unutulan iş", due: "2026-09-28T15:00")
+        // Three items due tomorrow: 3 first alerts (tier 0) + 12 nags k1…k4 (tier 1) exceed the budget of 12.
+        let fillers = [makeItem(10, title: "İş A", due: "2026-09-30T11:00"),
+                       makeItem(11, title: "İş B", due: "2026-09-30T13:00"),
+                       makeItem(12, title: "İş C", due: "2026-09-30T15:00")]
+        let result = plan([overdue] + fillers, now: "2026-09-29T10:00", totalBudget: 26)
+        XCTAssertEqual(result.itemBudget, 12)
+
+        // DEVIATION(04 §6.4 step 6): tier 1 = the first 4 *pending* follow-ups, so the forgotten item keeps nagging.
+        let kept = itemNotifications(result, overdue.id)
+        XCTAssertEqual(kept.map { $0.id }, (5...8).map { NotificationID.chain(overdue.id, $0) })
+        XCTAssertEqual(fs(kept.map { $0.fireDate }), ["2026-09-29T10:30", "2026-09-29T12:30", "2026-09-29T14:30",
+                                                     "2026-09-29T16:30"])
+        XCTAssertEqual(kept.map { $0.tier }, [1, 1, 1, 1])
+        XCTAssertEqual(kept.map { $0.attempt }, [5, 6, 7, 8], "attempt stays the absolute k")
+        XCTAssertNil(notification(result, id: NotificationID.chain(overdue.id, 9)), "5th pending nag is tier 3")
+        for filler in fillers {
+            XCTAssertNotNil(notification(result, id: NotificationID.chain(filler.id, 0)), "first alerts stay")
+        }
+        XCTAssertGreaterThan(result.droppedCount, 0)
+        assertPlanOrder(result)
+        assertUniqueIDs(result)
+    }
+
     func testHorizonSentinelForStaleItemsAndNoneWithoutItems() {
         let stale = makeItem(1, due: "2026-09-01T10:00")
         let result = plan([stale], now: "2026-09-29T10:00")
@@ -585,6 +627,38 @@ final class NagPlannerTests: XCTestCase {
         XCTAssertGreaterThan(result.rateLimitedCount, 0)
         XCTAssertEqual(result.droppedCount, 0, "rate-limited nags are not budget drops")
         XCTAssertNil(notification(result, id: NotificationID.sentinel))
+    }
+
+    func testShiftedNagSurvivesReconcileBetweenChainAndShiftedDate() {
+        let first = makeItem(1, title: "Ahmet'i ara", due: "2026-09-29T15:00")
+        let second = makeItem(2, title: "Siparişi onayla", due: "2026-09-29T14:50")
+        let shiftedID = NotificationID.chain(second.id, 1)
+        let before = plan([first, second], now: "2026-09-29T10:00")
+        // B.k1 (15:00) collides with A.k0 (15:00, fixed) and is moved to 15:03.
+        XCTAssertEqual(fireText(before, id: shiftedID), "2026-09-29T15:03")
+        let pendingDate = d("2026-09-29T15:03")
+
+        // A fired and was completed at 15:01: the fixed neighbour is gone on the replan.
+        var done = first
+        done.status = .done
+        var input = makeInput([done, second], now: "2026-09-29T15:01")
+        let withoutPending = NagPlanner.plan(input)
+        XCTAssertNil(notification(withoutPending, id: shiftedID), "without pending dates the chain cutoff drops it")
+
+        input.pendingNagDates = [shiftedID: pendingDate]
+        let carried = NagPlanner.plan(input)
+        let kept = notification(carried, id: shiftedID)
+        XCTAssertEqual(kept.map { f($0.fireDate) }, "2026-09-29T15:03", "the pending shifted nag is kept at its date")
+        XCTAssertEqual(kept?.kind, PlannedNotification.Kind.nag)
+        XCTAssertEqual(kept?.attempt, 1)
+        XCTAssertEqual(kept?.tier, 1)
+        XCTAssertEqual(fireText(carried, id: NotificationID.chain(second.id, 2)), "2026-09-29T15:20")
+        assertPlanOrder(carried)
+        assertUniqueIDs(carried)
+
+        // A pending date more than 15 minutes after the chain date is not a rate-limiter shift: not carried.
+        input.pendingNagDates = [shiftedID: d("2026-09-29T15:16")]
+        XCTAssertNil(notification(NagPlanner.plan(input), id: shiftedID))
     }
 
     // MARK: - Signing (D17, 05b A1)

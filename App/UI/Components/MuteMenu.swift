@@ -9,44 +9,49 @@ struct MuteMenu: View {
     @Environment(ToastCenter.self) private var toasts
 
     var body: some View {
-        let isMuted = currentMuteEnd(now: Date()) != nil
-        Menu {
-            Section("Sessize al") {
-                Button {
-                    mute(minutes: 30)
-                } label: {
-                    Label("30 dk", systemImage: "clock")
+        // The mute window ends by itself: re-evaluated every minute (muteUntil is always a whole minute), so the
+        // icon, its label and "Sessizi kapat" never keep claiming "Sessiz açık" after it ended (the toolbar
+        // lives outside TodayView's TimelineView).
+        TimelineView(.everyMinute) { context in
+            let isMuted = currentMuteEnd(now: context.date) != nil
+            Menu {
+                Section("Sessize al") {
+                    Button {
+                        mute(minutes: 30)
+                    } label: {
+                        Label("30 dk", systemImage: "clock")
+                    }
+                    Button {
+                        mute(minutes: 60)
+                    } label: {
+                        Label("1 saat", systemImage: "clock")
+                    }
+                    Button {
+                        mute(minutes: 120)
+                    } label: {
+                        Label("2 saat", systemImage: "clock")
+                    }
+                    Button {
+                        muteUntilWorkEnd()
+                    } label: {
+                        Label("Mesai sonuna kadar", systemImage: Symbol.endOfDay)
+                    }
                 }
-                Button {
-                    mute(minutes: 60)
-                } label: {
-                    Label("1 saat", systemImage: "clock")
+                if isMuted {
+                    Button(role: .destructive) {
+                        unmute()
+                    } label: {
+                        Label("Sessizi kapat", systemImage: "bell.fill")
+                    }
                 }
-                Button {
-                    mute(minutes: 120)
-                } label: {
-                    Label("2 saat", systemImage: "clock")
-                }
-                Button {
-                    muteUntilWorkEnd()
-                } label: {
-                    Label("Mesai sonuna kadar", systemImage: Symbol.endOfDay)
-                }
+            } label: {
+                Image(systemName: Symbol.mute)
+                    .foregroundStyle(isMuted ? Color.asistToday : Color.asistAccent)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
-            if isMuted {
-                Button(role: .destructive) {
-                    unmute()
-                } label: {
-                    Label("Sessizi kapat", systemImage: "bell.fill")
-                }
-            }
-        } label: {
-            Image(systemName: Symbol.mute)
-                .foregroundStyle(isMuted ? Color.asistToday : Color.asistAccent)
-                .frame(minWidth: 44, minHeight: 44)
-                .contentShape(Rectangle())
+            .accessibilityLabel(isMuted ? "Sessiz açık" : "Sessize al")
         }
-        .accessibilityLabel(isMuted ? "Sessiz açık" : "Sessize al")
     }
 
     private func currentMuteEnd(now: Date) -> Date? {

@@ -174,11 +174,12 @@ final class VoiceCoordinator {
         case .interrupted(let raw):
             phase = .idle
             let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            // needsReview item (03 §5.3); a "Sesle ertele" utterance is never saved. CaptureService shows the toast.
             if !text.isEmpty {
-                capture.saveInterruptedTranscript(text)      // needsReview task (03 §5.3)
-                let info = "Dinleme yarıda kaldı; söylediklerini taslak olarak sakladım."
-                message = info
-                AppEnvironment.shared.toasts.show(info)
+                let saved = capture.saveInterruptedTranscript(text, request: request)
+                if saved {
+                    message = "Dinleme yarıda kaldı; söylediklerini taslak olarak sakladım."
+                }
             }
         case .cancelled:
             break
@@ -244,6 +245,9 @@ final class VoiceCoordinator {
         guard UIApplication.shared.applicationState != .background else { return }
         speakGeneration += 1
         let generation = speakGeneration
+        // 01b §3.2: no volume trigger during TTS — turning the speech down must not open the mic. Every way out of
+        // .speaking re-arms (idle branch below, startListening's end, a superseding speak).
+        trigger.disarm()
         phase = .speaking
         await speaker.speak(trimmed)
         guard generation == speakGeneration, phase == .speaking else { return }
@@ -288,7 +292,7 @@ final class VoiceCoordinator {
             level = 0
             if !text.isEmpty {
                 AsistLog.info("Arka plana geçiş: yarım kalan döküm taslak olarak saklanıyor", .voice)
-                AppEnvironment.shared.capture.saveInterruptedTranscript(text)
+                AppEnvironment.shared.capture.saveInterruptedTranscript(text, request: request)
             }
         }
         speaker.stop()
@@ -309,7 +313,8 @@ final class VoiceCoordinator {
     }
 
     private func reportNoSpeech() {
-        let text = "Seni duyamadım. Tekrar denemek için dokun."
+        // The toast has no retry action (tapping it only dismisses it), so the copy does not promise one.
+        let text = "Seni duyamadım. Tekrar dene."
         message = text
         Haptics.warning()
         AppEnvironment.shared.toasts.show(text)

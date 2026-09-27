@@ -5,6 +5,16 @@ import Foundation
 import UIKit
 import AsistCore
 
+/// Outcome of `CaptureService.saveUnmatchedCommand` (a command sentence that matched no open item).
+enum UnmatchedCommandSave {
+    /// Persisted as a task marked "Emin değilim"; the toast offers "Geri Al" with this token.
+    case saved(UndoToken)
+    /// The write failed; the store keeps the item in memory and retries it (05a #3).
+    case keptInMemory
+    /// Nothing stored (data file unreadable).
+    case failed
+}
+
 struct CapturePreview: Equatable {
     let understood: String           // parser `understood`
     let level: ConfirmationLevel
@@ -24,6 +34,10 @@ final class CaptureService {
     /// Last card closed with "Vazgeç": its "Geri Al" (undoTranscript) brings back this very draft, edits included.
     private var recentlyDiscarded: CaptureDraft? = nil
     private var recentlyDiscardedAt: Date = Date.distantPast
+    /// "Tekrar söyle": the card a retry is about to replace. Neither saved nor dropped until the retry produced a
+    /// transcript (then the new result replaces it); a retry without one brings the same card back (03 §4.5,
+    /// principle 3).
+    private var redoDraft: CaptureDraft? = nil
 
     /// 01b §1.8 domain vocabulary (the speech recognizer's contextual strings start with these).
     static let jargon: [String] = [
@@ -108,6 +122,8 @@ final class CaptureService {
             reportDataUnavailable()
             return
         }
+        // A "Tekrar söyle" retry produced a transcript: its result replaces the old card (03 §4.5).
+        redoDraft = nil
         if let snoozeID = request.snoozeItemID {
             snoozeByVoice(trimmed, itemID: snoozeID, source: source)
             return
@@ -132,7 +148,9 @@ final class CaptureService {
                                     interactive: true, now: now)
         let draft = CaptureDraft(heardText: trimmed, source: source, parse: itemResult, proposal: proposal,
                                  autoSaveSeconds: store.settings.autoSaveSeconds)
+        draft.request = request
         presentDraft(draft)
+        requestSmartInterpretation(for: draft, text: trimmed, request: request, now: now)
     }
 
     /// ComposeSheet "Ekle": level .autoSave → save directly + undo toast; otherwise opens the card.
@@ -160,10 +178,12 @@ final class CaptureService {
                                     interactive: true, now: now)
         let draft = CaptureDraft(heardText: trimmed, source: .keyboard, parse: itemResult, proposal: proposal,
                                  autoSaveSeconds: store.settings.autoSaveSeconds)
+        draft.request = request
         if proposal.level == .autoSave && !proposal.needsTime {
             finalize(draft, implicit: false)
         } else {
             presentDraft(draft)
+            requestSmartInterpretation(for: draft, text: trimmed, request: request, now: now)
         }
     }
 
@@ -217,41 +237,141 @@ final class CaptureService {
 
     /// Sheet swiped away / app backgrounded / call → commit unresolved active draft (03 principle 3).
     /// A late `onDismiss` of an earlier sheet while this draft's card is on screen (app active) is ignored.
+    /// When the card on screen is committed (app backgrounded), the card is closed too: its draft is saved, so a
+    /// stale card must not stay up with buttons that no longer do anything (its onDismiss finds no active draft).
     func commitActiveDraftIfNeeded() {
+        // Leaving the app during a "Tekrar söyle" retry saves the card being retried (leaving = save).
+        if redoDraft != nil && UIApplication.shared.applicationState != .active {
+            commitRedoDraftIfNeeded()
+        }
         guard let draft = activeDraft else { return }
         if draft.isResolved {
             activeDraft = nil
             return
         }
-        if case .confirm(let shown)? = router.sheet, shown.id == draft.id,
-           UIApplication.shared.applicationState == .active {
+        var isShown = false
+        if case .confirm(let shown)? = router.sheet, shown.id == draft.id {
+            isShown = true
+        }
+        if isShown && UIApplication.shared.applicationState == .active {
             return
         }
         finalize(draft, implicit: true)
+        if isShown {
+            router.dismissSheet()
+        }
     }
 
-    /// Overlay interrupted with partial text → item with needsReview = true (03 §5.3).
-    func saveInterruptedTranscript(_ text: String) {
+    /// True while a "Tekrar söyle" retry is pending (ListeningOverlay "Klavye" decides with it).
+    var hasPendingRedo: Bool { redoDraft != nil }
+
+    /// "Tekrar söyle" on the card: the draft is set aside (resolved, so the sheet's onDismiss does not save it)
+    /// until the retry ends — a transcript replaces it, anything else brings it back (`restoreRedoDraftIfNeeded`).
+    func beginRedo(_ draft: CaptureDraft) {
+        guard !draft.isResolved else { return }
+        if redoDraft?.id != draft.id {
+            commitRedoDraftIfNeeded()                 // an older set-aside card is saved, never dropped
+        }
+        draft.isResolved = true
+        draft.autoSaveActive = false
+        if activeDraft?.id == draft.id {
+            activeDraft = nil
+        }
+        redoDraft = draft
+    }
+
+    /// The retry ended without a transcript (silence, Vazgeç, recognizer/permission failure, busy voice): the same
+    /// card comes back, edits kept, no countdown. It replaces a voice-failure "Yaz" fallback sheet if one opened.
+    func restoreRedoDraftIfNeeded() {
+        guard let draft = redoDraft else { return }
+        redoDraft = nil
+        draft.isResolved = false
+        draft.autoSaveActive = false
+        if draft.smartState == .working {
+            draft.smartState = .idle                 // an answer that arrived while it was set aside was dropped
+        }
+        presentDraft(draft)
+    }
+
+    /// The retry continues in "Yaz" with new text (ListeningOverlay "Klavye"): that text replaces the old card.
+    func abandonRedoDraft() {
+        guard redoDraft != nil else { return }
+        redoDraft = nil
+        AsistLog.info("Tekrar söyle: eski kart yeni yazılan metinle değiştiriliyor", .app)
+    }
+
+    /// App left during the retry → the card is saved like any card left unconfirmed (implicit).
+    private func commitRedoDraftIfNeeded() {
+        guard let draft = redoDraft else { return }
+        redoDraft = nil
+        draft.isResolved = false
+        finalize(draft, implicit: true)
+    }
+
+    /// Overlay interrupted with partial text → item with needsReview = true (03 §5.3), keeping the request's kind
+    /// and project. A "Sesle ertele" utterance (request.snoozeItemID != nil) is never turned into an item and is not
+    /// applied either (cut-off text may name the wrong time): the user is asked to try again.
+    /// Returns true only when the item was saved (its own toast is shown here).
+    @discardableResult
+    func saveInterruptedTranscript(_ text: String, request: ListenRequest = ListenRequest()) -> Bool {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty else { return false }
+        if request.snoozeItemID != nil {
+            AsistLog.info("Sesle erteleme yarıda kaldı; kayıt oluşturulmadı", .voice)
+            toasts.show("Erteleme yarıda kaldı. Tekrar dener misin?", seconds: 6)
+            return false
+        }
         guard ensureLoaded() else {
             AsistLog.error("Yarım döküm kaydedilemedi: veri dosyası okunamıyor", .store)
-            return
+            toasts.show(TurkishSpeech.dataUnavailable, seconds: 6)
+            return false
         }
         let now = Date()
         let result = parser().parse(trimmed, now: now)
-        let itemResult = captureResult(from: result, text: trimmed, forcedKind: nil)
-        let proposal = makeProposal(itemResult, text: trimmed, source: .voice, request: ListenRequest(),
+        let itemResult = captureResult(from: result, text: trimmed, forcedKind: request.kind)
+        let proposal = makeProposal(itemResult, text: trimmed, source: .voice, request: request,
                                     interactive: false, now: now)
         var item = proposal.item
         item.needsReview = true
         guard store.add(item) != nil, store.canPersist else {
-            AsistLog.error("Yarım döküm kaydedilemedi", .store)
-            toasts.show(CaptureCopy.saveFailed, seconds: 6)
-            return
+            // The store keeps a change whose write failed in memory and retries it (05a #3).
+            let inMemory = store.item(item.id) != nil
+            AsistLog.error("Yarım döküm kaydedilemedi (bellekte: " + (inMemory ? "evet" : "hayır") + ")", .store)
+            toasts.show(inMemory ? CaptureCopy.keptInMemory : CaptureCopy.saveFailed, seconds: 6)
+            return false
         }
         AsistLog.info("Yarım döküm taslak olarak kaydedildi (tür=" + item.kind.rawValue + ")", .voice)
         toasts.show("Dinleme yarıda kaldı; söylediklerini taslak olarak sakladım.", seconds: 6)
+        return true
+    }
+
+    /// A complete / cancel / snooze command that matched no open item ("Tedarikçideki siparişi iptal et" meant as a
+    /// new task): the sentence is kept as a task marked "Emin değilim" instead of being dropped (03 §5.10).
+    func saveUnmatchedCommand(text: String, source: CaptureSource) -> UnmatchedCommandSave {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return .failed }
+        guard ensureLoaded() else {
+            AsistLog.error("Eşleşmeyen komut saklanamadı: veri dosyası okunamıyor", .store)
+            return .failed
+        }
+        let now = Date()
+        let result = parser().parse(trimmed, now: now)
+        let itemResult = captureResult(from: result, text: trimmed, forcedKind: .task)
+        let proposal = makeProposal(itemResult, text: trimmed, source: source, request: ListenRequest(),
+                                    interactive: false, now: now)
+        var item = proposal.item
+        item.needsReview = true
+        let token = store.add(item)
+        if let undoToken = token, store.canPersist {
+            AsistLog.info("Eşleşmeyen komut incelenecek görev olarak kaydedildi", .app)
+            return .saved(undoToken)
+        }
+        if store.item(item.id) != nil {
+            AsistLog.error("Eşleşmeyen komut diske yazılamadı (bellekte: evet)", .store)
+            return .keptInMemory
+        }
+        AsistLog.error("Eşleşmeyen komut saklanamadı (bellekte: hayır)", .store)
+        return .failed
     }
 
     // MARK: - Headless (Siri / Shortcut)
@@ -276,7 +396,7 @@ final class CaptureService {
         let calendar = AppTime.calendar
         let result = parser().parse(trimmed, now: now)
         if result.kind == .command, let command = result.command {
-            return headlessCommand(command, text: trimmed, now: now, calendar: calendar)
+            return await headlessCommand(command, text: trimmed, source: source, now: now, calendar: calendar)
         }
         // 3
         let itemResult = captureResult(from: result, text: trimmed, forcedKind: nil)
@@ -284,7 +404,10 @@ final class CaptureService {
                                     interactive: false, now: now)
         let item = proposal.item
         guard store.add(item) != nil, store.canPersist else {
-            AsistLog.error("Siri kaydı diske yazılamadı", .intents)
+            // Spoken answer stays TurkishSpeech.saveFailed (04 §3.6.8): the intent process may be killed before the
+            // in-memory copy is retried, so persistence is never promised here.
+            let inMemory = store.item(item.id) != nil ? "evet" : "hayır"
+            AsistLog.error("Siri kaydı diske yazılamadı (bellekte: " + inMemory + ")", .intents)
             return TurkishSpeech.saveFailed
         }
         let reviewText = item.needsReview ? "evet" : "hayır"
@@ -292,12 +415,22 @@ final class CaptureService {
         AsistLog.info(logLine + " inceleme=" + reviewText, .intents)
         // 4 — never requestReconcile here: the process may be suspended right after perform() returns.
         await AppEnvironment.shared.engine.reconcile(reason: "intent")
+        // 4b — WP13: a low-confidence capture may be improved by Akıllı Mod within ≤ 8 s. The on-device item is
+        // already persisted and planned, so a slow or failed network never loses the capture (D34); an upgrade is
+        // itself persisted and reconciled before the answer.
+        var finalProposal = proposal
+        if CaptureService.wantsSmartMode(itemResult, settings: store.settings),
+           SmartModeClient.shared.isReady(store.settings),
+           let upgraded = await upgradeHeadless(itemID: item.id, text: trimmed, source: source, onDevice: itemResult,
+                                                now: now) {
+            finalProposal = upgraded
+        }
         // 5 (store state re-read after the await)
         let saved = store.item(item.id) ?? item
-        let lowConfidence = proposal.level == .review || saved.needsReview
+        let lowConfidence = finalProposal.level == .review || saved.needsReview
         return TurkishSpeech.confirmation(for: saved, projectName: store.projectName(for: saved), headless: true,
                                           lowConfidence: lowConfidence,
-                                          appliedDefaultTime: proposal.appliedDefaultTime,
+                                          appliedDefaultTime: finalProposal.appliedDefaultTime,
                                           now: now, calendar: calendar)
     }
 
@@ -322,6 +455,142 @@ final class CaptureService {
         toasts.show(CaptureCopy.doneToast(outcome.0, item: item, now: now, calendar: AppTime.calendar),
                     undo: outcome.1)
         Haptics.success()
+    }
+
+    // MARK: - Akıllı Mod (WP13, 04 Appendix B.2 / revision 3)
+
+    /// Smart Mode is asked only when it is switched on with "Emin olamadığımda sor", the capture is not a command and
+    /// the on-device parse is below the review threshold (`.smartModeSuggested`, confidence < 0.60) or the
+    /// classifier found no kind cue (`.noKindCue`).
+    static func wantsSmartMode(_ result: ParseResult, settings: AppSettings) -> Bool {
+        guard settings.smartModeEnabled, settings.smartModeAutoOnLowConfidence else { return false }
+        guard result.kind != .command else { return false }
+        if result.flags.contains(.smartModeSuggested) || result.flags.contains(.noKindCue) {
+            return true
+        }
+        return result.confidence < ParserSettings().smartModeThreshold
+    }
+
+    /// Interactive card: the on-device reading is already on screen; Smart Mode runs in the background and upgrades
+    /// the card in place when it returns a valid, more confident item before the user touched the card. Forced-kind
+    /// captures (project notes, "Takip ekle") and "Sesle ertele" are never sent.
+    func requestSmartInterpretation(for draft: CaptureDraft, text: String, request: ListenRequest, now: Date) {
+        guard !draft.isResolved, request.kind == nil, request.snoozeItemID == nil else { return }
+        let settings = store.settings
+        guard CaptureService.wantsSmartMode(draft.parse, settings: settings) else { return }
+        let client = SmartModeClient.shared
+        guard client.isReady(settings) else { return }
+        draft.smartState = .working
+        let projects = store.projects
+        let places = store.places
+        let hint = draft.parse.understood
+        let onDeviceConfidence = draft.parse.confidence
+        let calendar = AppTime.calendar
+        AsistLog.info("Akıllı Mod: düşük güvenli kart yorumlatılıyor", .smart)
+        Task { @MainActor [weak self] in
+            let outcome = await client.interpret(utterance: text, now: now, settings: settings, projects: projects,
+                                                 places: places, onDeviceHint: hint, calendar: calendar,
+                                                 timeout: SmartModeClient.interactiveParseTimeout)
+            guard let self = self else { return }
+            self.applySmartOutcome(outcome, to: draft, text: text, request: request,
+                                   onDeviceConfidence: onDeviceConfidence)
+        }
+    }
+
+    private func applySmartOutcome(_ outcome: Result<ParseResult, SmartModeError>, to draft: CaptureDraft,
+                                   text: String, request: ListenRequest, onDeviceConfidence: Double) {
+        let smart: ParseResult
+        switch outcome {
+        case .failure(let error):
+            AsistLog.info("Akıllı Mod: kart güncellenmedi (" + error.logCode + ")", .smart)
+            if !draft.isResolved {
+                draft.smartState = .failed(error.userMessage + " Cihaz içi sonuç kullanılıyor.")
+            }
+            return
+        case .success(let value):
+            smart = value
+        }
+        guard !draft.isResolved else {
+            AsistLog.info("Akıllı Mod: cevap geldiğinde kart zaten kapanmıştı", .smart)
+            return
+        }
+        guard smart.kind != .command, smart.item != nil else {
+            draft.smartState = .unchanged("Akıllı Mod bunu bir komut olarak yorumladı; kart değiştirilmedi.")
+            AsistLog.info("Akıllı Mod: komut yorumu karta uygulanmadı", .smart)
+            return
+        }
+        guard smart.confidence > onDeviceConfidence else {
+            draft.smartState = .unchanged("Akıllı Mod daha iyi bir yorum bulamadı.")
+            AsistLog.info("Akıllı Mod: yorum cihaz içi sonuçtan iyi değil", .smart)
+            return
+        }
+        guard !draft.isEdited else {
+            draft.smartState = .unchanged("Kartı değiştirdiğin için Akıllı Mod önerisi uygulanmadı.")
+            AsistLog.info("Akıllı Mod: kart düzenlenmişti, öneri uygulanmadı", .smart)
+            return
+        }
+        let now = Date()
+        var proposal = makeProposal(smart, text: text, source: draft.source, request: request, interactive: true,
+                                    now: now)
+        proposal.item.smartModeUsed = true
+        proposal.item.appendHistory(.smartMode, at: now)
+        draft.applySmart(parse: smart, proposal: proposal)
+        Haptics.light()
+        AsistLog.info("Akıllı Mod: kart güncellendi (tür=" + proposal.item.kind.rawValue + " seviye="
+                      + proposal.level.rawValue + ")", .smart)
+    }
+
+    /// Headless (Siri / Shortcut) pass over the already saved and planned item. Returns Smart Mode's proposal when the
+    /// item was upgraded (persisted, then reconciled — D34), else nil (the on-device item stays untouched).
+    private func upgradeHeadless(itemID: UUID, text: String, source: CaptureSource, onDevice: ParseResult,
+                                 now: Date) async -> CaptureProposal? {
+        let settings = store.settings
+        let projects = store.projects
+        let places = store.places
+        let outcome = await SmartModeClient.shared.interpret(utterance: text, now: now, settings: settings,
+                                                             projects: projects, places: places,
+                                                             onDeviceHint: onDevice.understood,
+                                                             calendar: AppTime.calendar,
+                                                             timeout: SmartModeClient.headlessParseTimeout)
+        let smart: ParseResult
+        switch outcome {
+        case .failure(let error):
+            AsistLog.info("Akıllı Mod (Siri): cihaz içi kayıt korundu (" + error.logCode + ")", .intents)
+            return nil
+        case .success(let value):
+            smart = value
+        }
+        guard smart.kind != .command, smart.item != nil, smart.confidence > onDevice.confidence else {
+            AsistLog.info("Akıllı Mod (Siri): daha iyi yorum yok, cihaz içi kayıt korundu", .intents)
+            return nil
+        }
+        guard store.isLoaded, let current = store.item(itemID), current.isOpen else { return nil }
+        let proposal = makeProposal(smart, text: text, source: source, request: ListenRequest(), interactive: false,
+                                    now: Date())
+        let upgraded = proposal.item
+        let token = store.update(itemID, event: .smartMode) { item in
+            item.kind = upgraded.kind
+            item.title = upgraded.title
+            item.notes = upgraded.notes
+            item.priority = upgraded.priority
+            item.dueDate = upgraded.dueDate
+            item.hasTime = upgraded.hasTime
+            item.recurrence = upgraded.recurrence
+            item.leadTimesMinutes = upgraded.leadTimesMinutes
+            item.isEvent = upgraded.isEvent
+            item.person = upgraded.person
+            item.projectID = upgraded.projectID
+            item.needsReview = upgraded.needsReview
+            item.parseConfidence = upgraded.parseConfidence
+            item.smartModeUsed = true
+        }
+        guard token != nil, store.canPersist else {
+            AsistLog.error("Akıllı Mod (Siri): güncelleme kaydedilemedi; cihaz içi kayıt duruyor", .store)
+            return nil
+        }
+        AsistLog.info("Akıllı Mod (Siri): kayıt güncellendi (tür=" + upgraded.kind.rawValue + ")", .intents)
+        await AppEnvironment.shared.engine.reconcile(reason: "intent.smart")
+        return proposal
     }
 
     // MARK: - Private: drafts
@@ -375,18 +644,23 @@ final class CaptureService {
             item.hasTime = true
             appliedDefault = true
         }
-        // 03 principle 3: an unconfirmed low-confidence card is kept, marked "Emin değilim".
-        if implicit && draft.level == .review && item.kind != .note {
+        // 03 principle 3: an unconfirmed low-confidence card is kept, marked "Emin değilim" (after a Smart Mode
+        // upgrade the level of Smart Mode's validated proposal counts).
+        if implicit && draft.effectiveLevel == .review && item.kind != .note {
             item.needsReview = true
         }
         item.updatedAt = now
 
         let token = store.add(item)
         guard let undoToken = token, store.canPersist else {
-            let inMemory = token != nil ? "evet" : "hayır"
-            AsistLog.error("Kayıt kaydedilemedi (bellekte: " + inMemory + ")", .store)
+            // A failed write keeps the item in memory and retries it (05a #3): offering a re-capture then would
+            // create a duplicate, so the transcript retry is offered only when the item is really absent.
+            let inMemory = store.item(item.id) != nil
+            AsistLog.error("Kayıt kaydedilemedi (bellekte: " + (inMemory ? "evet" : "hayır") + ")", .store)
             let text = draft.heardText.trimmingCharacters(in: .whitespacesAndNewlines)
-            if token == nil && !text.isEmpty {
+            if inMemory {
+                toasts.show(CaptureCopy.keptInMemory, seconds: 6)
+            } else if !text.isEmpty {
                 // Nothing reached the store: "Geri Al" re-opens the card so the sentence is not lost.
                 toasts.show(CaptureCopy.saveFailed, undoTranscript: text, seconds: 8)
             } else {
@@ -400,8 +674,9 @@ final class CaptureService {
         toasts.show(savedToastText(saved, now: now, calendar: calendar), undo: undoToken)
         Haptics.success()
         let implicitText = implicit ? "evet" : "hayır"
-        let logLine = "Kaydedildi: tür=" + saved.kind.rawValue + " seviye=" + draft.level.rawValue
-        AsistLog.info(logLine + " örtük=" + implicitText, .app)
+        let logLine = "Kaydedildi: tür=" + saved.kind.rawValue + " seviye=" + draft.effectiveLevel.rawValue
+        let smartText = draft.smartState == .applied ? " akıllı=evet" : ""
+        AsistLog.info(logLine + " örtük=" + implicitText + smartText, .app)
         if !implicit {
             let sentence = TurkishSpeech.confirmation(for: saved, projectName: store.projectName(for: saved),
                                                       headless: false, lowConfidence: false,
@@ -542,7 +817,8 @@ final class CaptureService {
 
     // MARK: - Private: headless commands (D22)
 
-    private func headlessCommand(_ command: ParsedCommand, text: String, now: Date, calendar: Calendar) -> String {
+    private func headlessCommand(_ command: ParsedCommand, text: String, source: CaptureSource, now: Date,
+                                 calendar: Calendar) async -> String {
         switch command.type {
         case .query:
             let answer = AgendaBuilder.answer(to: command, items: store.items, projects: store.projects, now: now,
@@ -560,11 +836,26 @@ final class CaptureService {
             switch decision {
             case .single(let id):
                 router.request(.openItem(id))
-            default:
+            case .ambiguous:
                 router.request(.today)
+            case MatchDecision.none:
+                // Nothing to complete / delete / snooze: the sentence is kept as a task to review, never dropped.
+                return await headlessUnmatched(text: text, source: source)
             }
             AsistLog.info("Siri komutu uygulamaya yönlendirildi: " + command.type.rawValue, .intents)
             return "Bunun için Asist'i açman gerekiyor."
+        }
+    }
+
+    private func headlessUnmatched(text: String, source: CaptureSource) async -> String {
+        switch saveUnmatchedCommand(text: text, source: source) {
+        case .saved:
+            // Never requestReconcile here: the process may be suspended right after perform() returns.
+            await AppEnvironment.shared.engine.reconcile(reason: "intent")
+            AsistLog.info("Siri komutu eşleşmedi; cümle incelenecek görev olarak kaydedildi", .intents)
+            return "Eşleşen kayıt bulamadım; cümleni gözden geçirmen için kaydettim."
+        case .keptInMemory, .failed:
+            return TurkishSpeech.saveFailed
         }
     }
 
@@ -589,6 +880,8 @@ final class CaptureService {
 enum CaptureCopy {
     /// `error.save_failed` (04 §3.6.8).
     static let saveFailed = "Kaydedilemedi. Tekrar dene."
+    /// The write failed but the store keeps the change in memory and retries it: no re-capture (it would duplicate).
+    static let keptInMemory = "Diske yazılamadı; kayıt bellekte duruyor, tekrar denenecek."
     static let notFound = "Kayıt bulunamadı."
 
     /// `toast.done` / `toast.done_recurring`.
