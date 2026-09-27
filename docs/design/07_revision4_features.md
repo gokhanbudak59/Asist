@@ -307,7 +307,11 @@ public enum ItemEditRules {
         if !result.hasTime {
             result.isEvent = false
         }
-        if result.isEvent && !current.isEvent && result.leadTimesMinutes.isEmpty && settings.eventDefaultLeadMinutes > 0 {
+        // Default pre-alert only when the edited copy did not itself arrive as an event without leads: the sheet's
+        // Etkinlik toggle already applies the default, so an event with no leads there is the user's "Yok".
+        let eventLeadsChosen = edited.isEvent && edited.leadTimesMinutes.isEmpty
+        if result.isEvent && !current.isEvent && result.leadTimesMinutes.isEmpty && !eventLeadsChosen
+            && settings.eventDefaultLeadMinutes > 0 {
             result.leadTimesMinutes = [settings.eventDefaultLeadMinutes]
         }
         result.leadTimesMinutes = Array(Set(result.leadTimesMinutes.filter { $0 > 0 && $0 <= 527_040 })).sorted()
@@ -517,6 +521,23 @@ public struct WidgetSnapshot: Codable, Equatable {
         return start <= date
     }
 
+    /// End of an event entry: anchor + Item.eventDurationMinutes (same rule as Item.eventEnd); nil otherwise.
+    /// Derived, so the stored schema is unchanged.
+    public func eventEnd(_ entry: Entry) -> Date? {
+        guard entry.isEvent, let anchor = entry.anchor else { return nil }
+        return anchor.addingTimeInterval(TimeInterval(Item.eventDurationMinutes * 60))
+    }
+
+    public func isEnded(_ entry: Entry, at date: Date) -> Bool {
+        guard let end = eventEnd(entry) else { return false }
+        return end <= date
+    }
+
+    /// Entries still worth showing at `date`: ended events dropped (the app closes them only when it runs).
+    public func visibleEntries(at date: Date) -> [Entry] {
+        return entries.filter { (entry: Entry) -> Bool in !isEnded(entry, at: date) }
+    }
+
     /// Overdue count as time passes without the app running.
     public func overdueCount(at date: Date) -> Int {
         var added = 0
@@ -529,34 +550,42 @@ public struct WidgetSnapshot: Codable, Equatable {
     }
 
     /// "bugün" counter at `date`: same day as `generatedAt` → stored count minus today's entries that became overdue
-    /// since; another day → entries anchored on that day that are not overdue (approximate: entries are capped).
+    /// or (events) ended since; another day → entries anchored on that day that are neither overdue nor ended
+    /// (approximate: entries are capped).
     public func todayCount(at date: Date, calendar: Calendar) -> Int {
         if calendar.isDate(date, inSameDayAs: generatedAt) {
             var left = todayCount
             for entry in entries {
-                guard let start = entry.overdueAt, start > generatedAt, start <= date,
-                      let anchor = entry.anchor, calendar.isDate(anchor, inSameDayAs: generatedAt) else { continue }
-                left -= 1
+                guard let anchor = entry.anchor, calendar.isDate(anchor, inSameDayAs: generatedAt) else { continue }
+                if let start = entry.overdueAt, start > generatedAt, start <= date {
+                    left -= 1
+                } else if let end = eventEnd(entry), end > generatedAt, end <= date {
+                    left -= 1
+                }
             }
             return max(0, left)
         }
         var count = 0
         for entry in entries {
             guard let anchor = entry.anchor, calendar.isDate(anchor, inSameDayAs: date) else { continue }
-            if !isOverdue(entry, at: date) {
+            if !isOverdue(entry, at: date) && !isEnded(entry, at: date) {
                 count += 1
             }
         }
         return count
     }
 
-    /// Timeline instants after `from`: overdue transitions within 24 h plus the next midnight; sorted, unique, ≤ limit.
+    /// Timeline instants after `from`: overdue transitions and event ends within 24 h plus the next midnight;
+    /// sorted, unique, ≤ limit.
     public func timelineDates(after from: Date, calendar: Calendar, limit: Int) -> [Date] {
         let horizon = from.addingTimeInterval(24 * 3600)
         var unique = Set<Date>()
         for entry in entries {
             if let start = entry.overdueAt, start > from, start <= horizon {
                 unique.insert(start)
+            }
+            if let end = eventEnd(entry), end > from, end <= horizon {
+                unique.insert(end)
             }
         }
         let midnight = AsistCalendar.addingDays(1, to: calendar.startOfDay(for: from), calendar: calendar)
@@ -578,7 +607,8 @@ public enum WidgetSnapshotBuilder {
     public static let horizonDays = 7
     public static let maxTitleLength = 80
     /// pool = items.filter(isNotifiable). overdue = isOverdue(at: now) sorted (priority desc, overdueStart asc,
-    /// createdAt asc, id.uuidString asc). upcoming = not overdue, anchorDate != nil, anchor < startOfDay(now) + 7 days,
+    /// createdAt asc, id.uuidString asc). Events with eventEnd <= now are skipped entirely (entries and todayCount).
+    /// upcoming = not overdue, anchorDate != nil, anchor < startOfDay(now) + 7 days,
     /// sorted (anchor asc, priority desc, createdAt asc, id). entries = (overdue + upcoming).prefix(12) with
     /// title = TurkishText.truncated(title, max: 80) ("Başlıksız" when empty), overdueAt = overdueStart(calendar:).
     /// overdueCount = overdue.count; todayCount = pool.filter(isDueToday(at: now)).count;
@@ -804,7 +834,7 @@ enum WidgetClock {
     static func whenText(_ entry: WidgetSnapshot.Entry, snapshot: WidgetSnapshot, now: Date) -> String
 }
 ```
-`Widgets/OzetWidget.swift`: `struct AsistOzetWidget: Widget` (`let kind = "AsistOzetWidget"`, `StaticConfiguration(kind:provider: AsistTimelineProvider())`, families `[.systemSmall, .systemMedium]`) + `struct OzetWidgetView: View` (`@Environment(\.widgetFamily) private var family`, `let entry: AsistEntry`). Counters use `entry.snapshot.overdueCount(at: entry.date)`, `todayCount(at: entry.date, calendar: WidgetClock.calendar)`, `followUpCount`. Counter texts: `String(n) + " geciken"`, `" bugün"`, `" takip"`; overdue color `n > 0 ? Color.red : Color.secondary`. Medium rows: `ForEach(Array(entry.snapshot.entries.prefix(3)))` → `Link(destination: WidgetLinks.item(e.id))`.
+`Widgets/OzetWidget.swift`: `struct AsistOzetWidget: Widget` (`let kind = "AsistOzetWidget"`, `StaticConfiguration(kind:provider: AsistTimelineProvider())`, families `[.systemSmall, .systemMedium]`) + `struct OzetWidgetView: View` (`@Environment(\.widgetFamily) private var family`, `let entry: AsistEntry`). Counters use `entry.snapshot.overdueCount(at: entry.date)`, `todayCount(at: entry.date, calendar: WidgetClock.calendar)`, `followUpCount`. Counter texts: `String(n) + " geciken"`, `" bugün"`, `" takip"`; overdue color `n > 0 ? Color.red : Color.secondary`. Medium rows: `ForEach(Array(entry.snapshot.visibleEntries(at: entry.date).prefix(3)))` (the Lock Screen "Sıradaki iş" also uses `visibleEntries(at: entry.date).first`) → `Link(destination: WidgetLinks.item(e.id))`.
 `Widgets/KilitWidgets.swift`: `AsistDinleKilitWidget` (`kind = "AsistDinleKilitWidget"`, `[.accessoryCircular]`, `.widgetURL(WidgetLinks.listen)`, `.accessibilityLabel("Asist Dinle")`) and `AsistSiradakiWidget` (`kind = "AsistSiradakiWidget"`, `[.accessoryRectangular]`, `.widgetAccentable()` on line 1). Rectangular first line: overdue > 0 → `"Asist · " + n + " geciken"`, else today > 0 → `"Asist · " + n + " bugün"`, else `"Asist"`.
 All root views: `.containerBackground(.fill.tertiary, for: .widget)`; accessory text `.font(.caption)`/`.headline`, `.lineLimit(1…2)`; no animations; `hasSharedData == false` → launcher layouts of §5.1.
 
@@ -1335,7 +1365,7 @@ struct TodayMoreMenu: View { init() }
 - Empty: `EmptyStateView("Henüz kişi yok", "Kayıtlarda kişi ya da firma adı geçince burada toplanır. Örn: “Mehmet cumaya kadar listeyi gönderecek”.", "person.2")`.
 - **Person detail** (title = display name):
   - Header: counts + "Son hareket: 27 Eylül · 3 gün önce" (`SettingsFormat.dayMonthYear`-style day text without the year is fine; same day rule as the list).
-  - If open Takip items: section **MESAJ** — `TextEditor` prefilled with `PeopleBoard.reminderMessage(…)` (min height 140), **"Hatırlatma mesajı gönder (3 konu)"** (`ShareLink`, PrimaryButtonStyle, tint teal), **Kopyala**; chips **"Yeniden sor: Yarın · 2 gün sonra · Pazartesi"** → snooze all open Takip items of the person to `NagPlanner.followUpAsk(after:workdays:settings:calendar:)` / `NagPlanner.nextMonday(now:settings:calendar:)`; one toast `"3 takip ertelendi · Yarın 16:00"` with a merged undo (`UndoToken(label: "Takipler ertelendi", before: allBefore)`), one haptic.
+  - If open Takip items: section **MESAJ** — `TextEditor` prefilled with `PeopleBoard.reminderMessage(…)` (min height 140), **"Hatırlatma mesajı gönder (3 konu)"** (`ShareLink`, PrimaryButtonStyle, tint teal), **Kopyala**; chips **"Yeniden sor: Yarın · 2 gün sonra · Pazartesi"** → snooze all open Takip items of the person to `NagPlanner.followUpAsk(after:workdays:settings:calendar:)` / `NagPlanner.nextMonday(now:settings:calendar:)` — items whose current `anchorDate` is already at or after the target are left unchanged (never pulled earlier; toast suffix `" · n zaten daha ileri"`, or `"n takip zaten daha ileri tarihli"` when none needed snoozing); one toast `"3 takip ertelendi · Yarın 16:00"` with a merged undo (`UndoToken(label: "Takipler ertelendi", before: allBefore)`), one haptic.
   - **BEKLEDİKLERİM** (open Takip, oldest first), **AÇIK İŞLER** (open tasks/reminders with this person or mentioning the name), **GEÇMİŞ** (last 5 done within 60 days) — rows are `ListItemLink` (so swipe Yaptım / Sil / Ertele / Düzenle work).
   - Unknown key → `EmptyStateView("Kişi bulunamadı", "Bu kişiye bağlı kayıt kalmamış.", "person.crop.circle.badge.questionmark")`.
 
@@ -1345,19 +1375,27 @@ struct TodayMoreMenu: View { init() }
 // API: Packages/AsistCore/Sources/AsistCore/People/PeopleBoard.swift
 public struct PersonSummary: Equatable, Identifiable {
     public var id: String { key }
-    public var key: String                // TurkishText.searchKey(trimmed name) — Route.person value
-    public var displayName: String        // most frequent spelling; tie → most recently updated item's spelling
+    public var key: String                // PeopleBoard.key(for: name) — Route.person value
+    public var displayName: String        // most words (keeps "Bey"/"Hanım" for the greeting), then most frequent,
+                                          // then most recently updated item's spelling
     public var followUps: [Item]          // open .waiting with this person, oldest anchor (then createdAt) first
     public var overdueFollowUps: Int      // of followUps, isOverdue(at: now)
     public var openItems: [Item]          // open, not note, not waiting: person == key, or (person nil/other) and the
-                                          // title's FuzzyMatcher.tokens contain every name token (honorifics removed,
-                                          // tokens ≥ 3 characters); sorted by anchor (undated last)
+                                          // title names the person: every name token (honorifics removed, ≥ 3
+                                          // characters) matches a title word whose FuzzyMatcher token is the full
+                                          // name word, or whose token is the name's stripped form AND whose folded
+                                          // word starts with the full name ("Ayşe" yes, "emin" for Emine no);
+                                          // sorted by anchor (undated last)
     public var recentDone: [Item]         // status .done, person == key, completedAt ≥ now − 60 days; newest first; ≤ 5
     public var lastActivity: Date?        // max(completedAt ?? updatedAt) over non-deleted items with person == key
 }
 
 public enum PeopleBoard {
-    public static let honorifics: Set<String>   // "bey", "hanim", "usta", "hoca", "abi", "abla", "sef", "mudur", "sayin"
+    public static let honorifics: Set<String>   // "bey", "hanim", "usta", "hoca", "hocam", "abi", "abim", "agabey",
+                                                // "abla", "sef", "mudur", "efendi", "beyefendi", "hanimefendi", "sayin"
+    /// searchKey(trimmed name) without one leading "sayin" and without trailing honorific words ("Ahmet Bey",
+    /// "Ahmet" → "ahmet"; "Usta Ahmet" → "usta ahmet"); a name made only of honorifics keeps its full key ("sef").
+    /// Used for every item's person and re-applied to the `summary(forKey:)` argument.
     public static func key(for name: String) -> String
     /// Everyone with a non-deleted item whose `person` is non-empty, kept when an open item exists or lastActivity is
     /// within 90 days; sorted (overdueFollowUps desc, followUps.count desc, openItems.count desc, lastActivity desc,

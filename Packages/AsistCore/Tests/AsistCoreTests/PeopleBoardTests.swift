@@ -64,6 +64,67 @@ final class PeopleBoardTests: XCTestCase {
         XCTAssertEqual(summary?.displayName, "ALİ")
     }
 
+    // MARK: - Honorifics
+
+    func testKeyDropsTrailingHonorificsAndLeadingSayin() {
+        XCTAssertEqual(PeopleBoard.key(for: "Ahmet Bey"), "ahmet")
+        XCTAssertEqual(PeopleBoard.key(for: "Ayşe Hanım"), "ayse")
+        XCTAssertEqual(PeopleBoard.key(for: "Sayın Hasan Bey"), "hasan")
+        XCTAssertEqual(PeopleBoard.key(for: "Mehmet Ağabey"), "mehmet")
+        XCTAssertEqual(PeopleBoard.key(for: "Kemal Hocam"), "kemal")
+        XCTAssertEqual(PeopleBoard.key(for: "Ali Usta"), "ali")
+        XCTAssertEqual(PeopleBoard.key(for: "Usta Ahmet"), "usta ahmet", "only trailing honorifics are dropped")
+        XCTAssertEqual(PeopleBoard.key(for: "Şef"), "sef", "a name made only of an honorific keeps its key")
+        XCTAssertEqual(PeopleBoard.key(for: "Ahmet Ak"), "ahmet ak")
+        XCTAssertEqual(PeopleBoard.key(for: "  "), "")
+    }
+
+    func testHonorificSpellingsMergeIntoOnePerson() {
+        let items = [
+            makeItem(.waiting, "Teklif", due: "2026-09-29T10:00", person: "Ahmet", created: "2026-09-20T09:00"),
+            makeItem(.waiting, "Numune", due: "2026-09-30T10:00", person: "Ahmet", created: "2026-09-21T09:00"),
+            makeItem(.waiting, "Fatura", due: "2026-09-28T10:00", person: "Ahmet Bey", created: "2026-09-22T09:00"),
+            makeItem(.waiting, "Onay", due: "2026-09-29T10:00", person: "Ayşe", created: "2026-09-22T09:00"),
+            makeItem(.waiting, "Çizim", due: "2026-09-30T10:00", person: "Ayşe Hanım", created: "2026-09-23T09:00"),
+            makeItem(.waiting, "Kablo", due: "2026-09-30T10:00", person: "Ahmet Ak", created: "2026-09-23T09:00")
+        ]
+        let board = PeopleBoard.build(items: items, now: now, calendar: calendar)
+        XCTAssertEqual(board.map { $0.key }, ["ahmet", "ayse", "ahmet ak"])
+        let ahmet = board.first { $0.key == "ahmet" }
+        XCTAssertEqual(ahmet?.displayName, "Ahmet Bey", "the fuller spelling wins for the greeting")
+        XCTAssertEqual(ahmet?.followUps.map { $0.title }, ["Fatura", "Teklif", "Numune"])
+        let ayse = board.first { $0.key == "ayse" }
+        XCTAssertEqual(ayse?.displayName, "Ayşe Hanım")
+        XCTAssertEqual(ayse?.followUps.count, 2)
+        XCTAssertEqual(board.first { $0.key == "ahmet ak" }?.followUps.count, 1)
+    }
+
+    // MARK: - Mentions
+
+    func testMentionNeedsTheWholeNameNotItsStrippedForm() {
+        let items = [
+            makeItem(.task, "Teklif fiyatından emin ol", created: "2026-09-26T09:00"),
+            makeItem(.task, "Gül Hanım'ı ara", created: "2026-09-26T09:30"),
+            makeItem(.task, "Emine'ye numuneyi ver", created: "2026-09-26T10:00"),
+            makeItem(.waiting, "Rapor", due: "2026-09-29T10:00", person: "Emine"),
+            makeItem(.waiting, "Sipariş", due: "2026-09-29T10:00", person: "Gülten")
+        ]
+        let emine = PeopleBoard.summary(forKey: "emine", items: items, now: now, calendar: calendar)
+        XCTAssertEqual(emine?.openItems.map { $0.title }, ["Emine'ye numuneyi ver"])
+        let gulten = PeopleBoard.summary(forKey: "gulten", items: items, now: now, calendar: calendar)
+        XCTAssertEqual(gulten?.openItems.count, 0)
+
+        let ayse = [
+            makeItem(.task, "Ayşe'ye çizimi gönder", created: "2026-09-26T09:00"),
+            makeItem(.task, "Ayşeye numuneyi ver", created: "2026-09-26T10:00"),
+            makeItem(.task, "Ayşe ile toplantı", created: "2026-09-26T11:00"),
+            makeItem(.waiting, "Onay", due: "2026-09-29T10:00", person: "Ayşe")
+        ]
+        let summary = PeopleBoard.summary(forKey: "ayse", items: ayse, now: now, calendar: calendar)
+        XCTAssertEqual(summary?.openItems.map { $0.title },
+                       ["Ayşe'ye çizimi gönder", "Ayşeye numuneyi ver", "Ayşe ile toplantı"])
+    }
+
     // MARK: - Follow-ups, open items, history
 
     func testFollowUpsOldestFirstWithOverdueCount() {
@@ -84,8 +145,11 @@ final class PeopleBoardTests: XCTestCase {
         var more = items
         more.append(makeItem(.task, "Rapor", person: "Ahmet Bey", created: "2026-09-26T10:00"))
         more.append(makeItem(.task, "Kablo", person: "Ahmet Ak", created: "2026-09-26T10:00"))
+        // "Ahmet Bey" is the same person as "Ahmet": an old "ahmet bey" route resolves to the merged summary.
         let bey = PeopleBoard.summary(forKey: "ahmet bey", items: more, now: now, calendar: calendar)
+        XCTAssertEqual(bey?.key, "ahmet")
         XCTAssertEqual(bey?.openItems.map { $0.title }, ["Ahmet'e teklifi gönder", "Rapor"])
+        XCTAssertEqual(bey?.followUps.count, 3)
         let ak = PeopleBoard.summary(forKey: "ahmet ak", items: more, now: now, calendar: calendar)
         XCTAssertEqual(ak?.openItems.map { $0.title }, ["Ahmet'e teklifi gönder", "Kablo"])
 

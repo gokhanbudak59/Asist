@@ -171,7 +171,8 @@ final class LocationService {
     // MARK: - Geofence requests
 
     /// 1) records delivered asist.loc.* notifications (store.recordLocationFired(id, at: notification.date)) and
-    ///    removes delivered ones of closed/deleted items;
+    ///    removes delivered ones of closed/deleted items and ones older than the item's last geofence re-arm
+    ///    (NotificationStaleness.isLocationDeliveryBeforeRearm: completed/missed occurrence, reschedule);
     /// 2) desired = isUsable ? LocationPlanner.candidates(items:places:projects:) : [];
     /// 3) removes pending asist.loc.* that are not desired; adds desired ones that are missing or whose userInfo "fp"
     ///    differs (same identifier replaces the pending request);
@@ -201,6 +202,15 @@ final class LocationService {
                 continue
             }
             if item.placeID != nil && item.locationFiredAt == nil {
+                // An old delivery (before a completed / missed occurrence or a reschedule re-armed the geofence)
+                // must not mark the new period as fired: it is removed instead (07 §9.10).
+                if NotificationStaleness.isLocationDeliveryBeforeRearm(item, deliveredAt: notification.date,
+                                                                       now: Date()) {
+                    staleDelivered.append(identifier)
+                    AsistLog.info("Eski konum bildirimi kaldırıldı (yeniden kuruldu): öğe=" + itemID.uuidString,
+                                  .location)
+                    continue
+                }
                 store.recordLocationFired(itemID, at: notification.date)
                 if store.item(itemID)?.locationFiredAt != nil {
                     recorded += 1

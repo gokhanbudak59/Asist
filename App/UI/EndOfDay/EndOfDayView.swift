@@ -6,6 +6,7 @@ import AsistCore
 struct EndOfDayView: View {
     @Environment(DataStore.self) private var store
     @Environment(ToastCenter.self) private var toasts
+    @Environment(AppRouter.self) private var router
 
     var body: some View {
         TimelineView(.everyMinute) { context in
@@ -96,6 +97,19 @@ struct EndOfDayView: View {
             .buttonStyle(.borderless)
         }
         .padding(.vertical, 4)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {      // 07 §4.1: "Düzenle" on every open row
+            Button(role: .destructive) {
+                DetailItemActions.delete(item.id, store: store, toasts: toasts)
+            } label: {
+                Label("Sil", systemImage: "trash")
+            }
+            Button {
+                router.present(.editItem(item.id))
+            } label: {
+                Label("Düzenle", systemImage: "pencil")
+            }
+            .tint(Color.asistAccent)
+        }
     }
 
     private func rowButton(_ title: String, tint: Color, action: @escaping () -> Void) -> some View {

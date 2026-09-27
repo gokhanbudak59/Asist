@@ -13,7 +13,8 @@ public enum WidgetSnapshotBuilder {
     /// sorted (anchor asc, priority desc, createdAt asc, id). entries = (overdue + upcoming).prefix(12) with
     /// title = TurkishText.truncated(title, max: 80) ("Başlıksız" when empty), overdueAt = overdueStart(calendar:).
     /// overdueCount = overdue.count; todayCount = pool.filter(isDueToday(at: now)).count;
-    /// followUpCount = pool.filter(kind == .waiting).count; hideTitlesWhenLocked = !settings.lockScreenShowsContent;
+    /// followUpCount = pool.filter(kind == .waiting).count; events whose eventEnd <= now are skipped for entries and
+    /// todayCount (the app closes them on its next reconcile); hideTitlesWhenLocked = !settings.lockScreenShowsContent;
     /// generatedAt = now.
     public static func build(items: [Item], settings: AppSettings, now: Date, calendar: Calendar) -> WidgetSnapshot {
         let pool = items.filter { (item: Item) -> Bool in item.isNotifiable }
@@ -26,6 +27,11 @@ public enum WidgetSnapshotBuilder {
         for item in pool {
             if item.kind == .waiting {
                 followUpCount += 1
+            }
+            // An event that already ended (anchor + 120 dk) is only waiting for the app to close it: neither "bugün"
+            // nor the next job on the widgets.
+            if let end = item.eventEnd, end <= now {
+                continue
             }
             if item.isDueToday(at: now, calendar: calendar) {
                 todayCount += 1

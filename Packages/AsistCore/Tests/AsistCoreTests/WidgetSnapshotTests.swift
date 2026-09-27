@@ -232,6 +232,59 @@ final class WidgetSnapshotTests: XCTestCase {
         }
     }
 
+    // MARK: Ended events
+
+    private func eventFixture() -> (ended: Item, running: Item, later: Item, tomorrowEvent: Item) {
+        (ended: makeItem(.reminder, "Sabah toplantısı", due: "2026-09-27T08:00", isEvent: true),    // bitti 10:00
+         running: makeItem(.reminder, "Proje toplantısı", due: "2026-09-27T09:00", isEvent: true),  // biter 11:00
+         later: makeItem(.reminder, "Teklifi gönder", due: "2026-09-27T14:00"),
+         tomorrowEvent: makeItem(.reminder, "Saha ziyareti", due: "2026-09-28T09:00", isEvent: true))
+    }
+
+    func testEndedEventIsExcludedFromEntriesAndTodayCount() {
+        let f = eventFixture()
+        let snapshot = build([f.ended, f.running, f.later, f.tomorrowEvent])
+        XCTAssertEqual(snapshot.entries.map { $0.id }, [f.running.id, f.later.id, f.tomorrowEvent.id])
+        XCTAssertEqual(snapshot.todayCount, 2, "biten etkinlik bugün sayılmaz")
+        XCTAssertEqual(snapshot.overdueCount, 0)
+        if let first = snapshot.entries.first {
+            XCTAssertEqual(snapshot.eventEnd(first), TestSupport.date("2026-09-27T11:00"))
+        }
+        let reminder = snapshot.entries.first { $0.id == f.later.id }
+        XCTAssertNotNil(reminder)
+        if let plain = reminder {
+            XCTAssertNil(snapshot.eventEnd(plain))
+            XCTAssertFalse(snapshot.isEnded(plain, at: TestSupport.date("2026-10-01T00:00")))
+        }
+    }
+
+    func testEventDisappearsAndTodayCountDropsAtEventEnd() {
+        let f = eventFixture()
+        let snapshot = build([f.ended, f.running, f.later, f.tomorrowEvent])
+        let beforeEnd = TestSupport.date("2026-09-27T10:59")
+        let atEnd = TestSupport.date("2026-09-27T11:00")
+        XCTAssertEqual(snapshot.visibleEntries(at: beforeEnd).first?.id, f.running.id)
+        XCTAssertEqual(snapshot.visibleEntries(at: atEnd).first?.id, f.later.id)
+        XCTAssertEqual(snapshot.visibleEntries(at: atEnd).count, 2)
+        XCTAssertEqual(snapshot.todayCount(at: beforeEnd, calendar: calendar), 2)
+        XCTAssertEqual(snapshot.todayCount(at: atEnd, calendar: calendar), 1)
+        XCTAssertEqual(snapshot.todayCount(at: TestSupport.date("2026-09-27T14:00"), calendar: calendar), 0)
+        XCTAssertEqual(snapshot.todayCount(at: TestSupport.date("2026-09-28T10:59"), calendar: calendar), 1)
+        XCTAssertEqual(snapshot.todayCount(at: TestSupport.date("2026-09-28T11:00"), calendar: calendar), 0,
+                       "ertesi gün de biten etkinlik sayılmaz")
+        XCTAssertEqual(snapshot.overdueCount(at: TestSupport.date("2026-09-28T11:00")), 1, "etkinlik gecikmez")
+    }
+
+    func testTimelineDatesIncludeEventEnd() {
+        let f = eventFixture()
+        let snapshot = build([f.ended, f.running, f.later, f.tomorrowEvent])
+        XCTAssertEqual(snapshot.timelineDates(after: now, calendar: calendar, limit: 20), [
+            TestSupport.date("2026-09-27T11:00"),
+            TestSupport.date("2026-09-27T14:00"),
+            TestSupport.date("2026-09-28T00:00")
+        ])
+    }
+
     // MARK: Timeline
 
     private func makeEntry(_ title: String, overdueAt: String?) -> WidgetSnapshot.Entry {

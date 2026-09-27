@@ -60,7 +60,13 @@ public enum FuzzyMatcher {
     /// (i ı u ü yi yı yu yü e a ye ya de da te ta den dan ten tan in ın un ün nin nın le la yle yla),
     /// stop words removed (hatırlatma, hatırlatmasını, görev, işi, konusu→konu, bunu, şunu).
     public static func tokens(_ text: String) -> [String] {
-        var result: [String] = []
+        return tokenPairs(text).map { (pair: (word: String, token: String)) -> String in pair.token }
+    }
+
+    /// `tokens(_:)` with each token paired with the folded word it came from (apostrophe part cut, no suffix
+    /// stripping): "Ayşe'ye" → ("ayse", "ayse"), "Ayşeye" → ("ayseye", "ayse"), "Ayşe" → ("ayse", "ays").
+    static func tokenPairs(_ text: String) -> [(word: String, token: String)] {
+        var result: [(word: String, token: String)] = []
         let rawWords = text.split(whereSeparator: { $0 == " " || $0 == "\n" || $0 == "\t" || $0 == "\r" })
         for rawWord in rawWords {
             var word = String(rawWord)
@@ -71,8 +77,9 @@ public enum FuzzyMatcher {
             }
             let parts = TurkishText.searchKey(word).split(separator: " ")
             for part in parts {
-                if let token = normalizedToken(String(part), stripSuffix: !hadApostrophe) {
-                    result.append(token)
+                let folded = String(part)
+                if let token = normalizedToken(folded, stripSuffix: !hadApostrophe) {
+                    result.append((word: folded, token: token))
                 }
             }
         }

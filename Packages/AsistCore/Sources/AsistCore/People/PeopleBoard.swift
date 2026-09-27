@@ -5,9 +5,11 @@ import Foundation
 
 public struct PersonSummary: Equatable, Identifiable {
     public var id: String { key }
-    /// TurkishText.searchKey(trimmed name) — the `Route.person` value.
+    /// PeopleBoard.key(for: name): searchKey without a leading "sayın" or trailing honorifics ("Ahmet Bey" and
+    /// "Ahmet" → "ahmet") — the `Route.person` value.
     public var key: String
-    /// Most frequent spelling; tie → the most recently updated item's spelling.
+    /// Spelling with the most words (keeps the honorific for the greeting), then the most frequent, then the most
+    /// recently updated item's spelling.
     public var displayName: String
     /// Open .waiting items with this person, oldest anchor (then createdAt) first.
     public var followUps: [Item]
@@ -34,14 +36,32 @@ public struct PersonSummary: Equatable, Identifiable {
 }
 
 public enum PeopleBoard {
-    /// Folded honorifics ignored when a title is searched for a person's name ("Ahmet Bey" → "ahmet").
-    public static let honorifics: Set<String> = ["bey", "hanim", "usta", "hoca", "abi", "abla", "sef", "mudur", "sayin"]
+    /// Folded honorifics: dropped from the end of a person key and ignored when a title is searched for a person's
+    /// name ("Ahmet Bey" → "ahmet").
+    public static let honorifics: Set<String> = [
+        "bey", "hanim", "usta", "hoca", "hocam", "abi", "abim", "agabey", "abla", "sef", "mudur", "efendi",
+        "beyefendi", "hanimefendi", "sayin"
+    ]
     public static let recentDoneDays = 60
     public static let activeDays = 90
     public static let maxRecentDone = 5
 
+    /// searchKey(trimmed name) without one leading "sayin" and without trailing honorific words, so "Ahmet",
+    /// "Ahmet Bey" and "Sayın Ahmet Bey" share "ahmet". Middle words are kept ("Usta Ahmet" → "usta ahmet"); a name
+    /// made only of honorifics keeps its full key ("Şef" → "sef").
     public static func key(for name: String) -> String {
-        TurkishText.searchKey(name.trimmingCharacters(in: .whitespacesAndNewlines))
+        let full = TurkishText.searchKey(name.trimmingCharacters(in: .whitespacesAndNewlines))
+        var words = full.split(separator: " ").map { (part: Substring) -> String in String(part) }
+        if let first = words.first, first == "sayin" {
+            words.removeFirst()
+        }
+        while let last = words.last, honorifics.contains(last) {
+            words.removeLast()
+        }
+        if words.isEmpty {
+            return full
+        }
+        return words.joined(separator: " ")
     }
 
     /// Everyone with a non-deleted item whose `person` is non-empty, kept when an open item exists or lastActivity is
@@ -75,10 +95,12 @@ public enum PeopleBoard {
         }
     }
 
-    /// Same computation for one key (nil when no non-deleted item carries it).
+    /// Same computation for one key (nil when no non-deleted item carries it). The key is normalized again, so an
+    /// older route such as "ahmet bey" still resolves to "ahmet".
     public static func summary(forKey key: String, items: [Item], now: Date, calendar: Calendar) -> PersonSummary? {
-        guard !key.isEmpty else { return nil }
-        return makeSummary(key: key, prepared: prepare(items), now: now, calendar: calendar)
+        let normalized = PeopleBoard.key(for: key)
+        guard !normalized.isEmpty else { return nil }
+        return makeSummary(key: normalized, prepared: prepare(items), now: now, calendar: calendar)
     }
 
     /// "" when no follow-ups. 1 item: "<greeting> <title> konusunda son durum nedir? Teşekkürler." ≥ 2 items:
@@ -121,26 +143,35 @@ public enum PeopleBoard {
 
     // MARK: - Private
 
+    fileprivate struct TitleWord {
+        /// Folded title word (apostrophe part cut, no suffix stripping).
+        var word: String
+        /// Its FuzzyMatcher token.
+        var token: String
+    }
+
     fileprivate struct Prepared {
         var item: Item
-        /// TurkishText.searchKey of the trimmed person ("" when none).
+        /// PeopleBoard.key(for:) of the trimmed person ("" when none).
         var personKey: String
         /// Trimmed person spelling.
         var spelling: String
-        /// FuzzyMatcher.tokens(title) — only for open, non-note, non-waiting items (mention candidates).
-        var titleTokens: Set<String>
+        /// FuzzyMatcher.tokenPairs(title) — only for open, non-note, non-waiting items (mention candidates).
+        var titleWords: [TitleWord]
     }
 
     private static func prepare(_ items: [Item]) -> [Prepared] {
         var result: [Prepared] = []
         for item in items where item.status != .deleted {
             let spelling = (item.person ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            var tokens = Set<String>()
+            var words: [TitleWord] = []
             if item.isOpen && item.kind != .note && item.kind != .waiting {
-                tokens = Set(FuzzyMatcher.tokens(item.title))
+                for pair in FuzzyMatcher.tokenPairs(item.title) {
+                    words.append(TitleWord(word: pair.word, token: pair.token))
+                }
             }
-            result.append(Prepared(item: item, personKey: TurkishText.searchKey(spelling), spelling: spelling,
-                                   titleTokens: tokens))
+            let personKey = spelling.isEmpty ? "" : PeopleBoard.key(for: spelling)
+            result.append(Prepared(item: item, personKey: personKey, spelling: spelling, titleWords: words))
         }
         return result
     }
@@ -185,7 +216,7 @@ public enum PeopleBoard {
                         followUps.append(item)
                     }
                 } else if item.kind != .note {
-                    if ownsKey || mentions(entry.titleTokens, nameTokens: nameTokens) {
+                    if ownsKey || mentions(entry.titleWords, nameTokens: nameTokens) {
                         openItems.append(item)
                     }
                 }
@@ -197,15 +228,27 @@ public enum PeopleBoard {
         }
         guard carriesKey else { return nil }
 
-        // Display spelling: most frequent, then most recently updated, then alphabetical (deterministic).
+        // Display spelling: most words ("Ahmet Bey" over "Ahmet", for the greeting), then most frequent, then most
+        // recently updated, then alphabetical (deterministic).
         var displayName = ""
+        var bestWords = -1
         var bestCount = -1
         var bestLatest = Date.distantPast
         for spelling in spellingCounts.keys.sorted() {
+            let words = spelling.split(whereSeparator: { (ch: Character) -> Bool in ch.isWhitespace }).count
             let count = spellingCounts[spelling] ?? 0
             let latest = spellingLatest[spelling] ?? Date.distantPast
-            if count > bestCount || (count == bestCount && latest > bestLatest) {
+            var better = false
+            if words != bestWords {
+                better = words > bestWords
+            } else if count != bestCount {
+                better = count > bestCount
+            } else {
+                better = latest > bestLatest
+            }
+            if better {
                 displayName = spelling
+                bestWords = words
                 bestCount = count
                 bestLatest = latest
             }
@@ -230,31 +273,47 @@ public enum PeopleBoard {
                              lastActivity: lastActivity)
     }
 
+    fileprivate struct NameToken {
+        /// Folded name word ("ayse").
+        var word: String
+        /// Its FuzzyMatcher form when different ("ays"); nil otherwise.
+        var stripped: String?
+    }
+
     /// Name tokens of `key` that a title must contain: honorifics and words shorter than 3 characters removed.
-    /// Each token also carries its FuzzyMatcher form ("ayse" → "ays"), because titles are tokenized that way
-    /// unless the word had an apostrophe ("Ayşe'ye" → "ayse", "Ayşeye" → "ayse", "Ayşe" → "ays").
-    private static func mentionTokens(forKey key: String) -> [[String]] {
-        var result: [[String]] = []
+    private static func mentionTokens(forKey key: String) -> [NameToken] {
+        var result: [NameToken] = []
         for part in key.split(separator: " ") {
             let word = String(part)
             if word.count < 3 || honorifics.contains(word) {
                 continue
             }
-            var variants: [String] = [word]
-            if let stripped = FuzzyMatcher.tokens(word).first, stripped != word {
-                variants.append(stripped)
+            var stripped: String? = nil
+            if let token = FuzzyMatcher.tokens(word).first, token != word {
+                stripped = token
             }
-            result.append(variants)
+            result.append(NameToken(word: word, stripped: stripped))
         }
         return result
     }
 
-    private static func mentions(_ titleTokens: Set<String>, nameTokens: [[String]]) -> Bool {
-        guard !nameTokens.isEmpty, !titleTokens.isEmpty else { return false }
-        for variants in nameTokens {
+    /// Every name token must match a title word: the word's token is the full name ("Ayşe'ye", "Ayşeye" → "ayse"),
+    /// or the word's token is the name's stripped form AND the folded word itself starts with the full name
+    /// ("Ayşe" → word "ayse", token "ays"). The second rule keeps unrelated words whose token happens to equal the
+    /// stripped name out ("emin" for Emine, "gül" for Gülten).
+    private static func mentions(_ titleWords: [TitleWord], nameTokens: [NameToken]) -> Bool {
+        guard !nameTokens.isEmpty, !titleWords.isEmpty else { return false }
+        for name in nameTokens {
             var found = false
-            for variant in variants where titleTokens.contains(variant) {
-                found = true
+            for title in titleWords {
+                if title.token == name.word {
+                    found = true
+                } else if let stripped = name.stripped, title.token == stripped, title.word.hasPrefix(name.word) {
+                    found = true
+                }
+                if found {
+                    break
+                }
             }
             if !found {
                 return false

@@ -293,8 +293,15 @@ final class ReminderEngine {
 
         // 07 §9.6: any response to a geofence notification (tap, dismiss, action) proves its delivery — the item
         // nags from here on (anchor = locationFiredAt) unless the action below completes or snoozes it.
+        // A delivery older than the item's last re-arm (completed / missed occurrence, reschedule) belongs to an
+        // earlier period and must not mark the current one as fired.
         if event.notificationID.hasPrefix(NotificationID.locationPrefix), let id = event.itemID {
-            store.recordLocationFired(id, at: event.deliveredAt)
+            if let item = store.item(id),
+               NotificationStaleness.isLocationDeliveryBeforeRearm(item, deliveredAt: event.deliveredAt, now: now) {
+                AsistLog.info("Eski konum bildirimi kaydedilmedi: öğe=\(id.uuidString)", .notif)
+            } else {
+                store.recordLocationFired(id, at: event.deliveredAt)
+            }
         }
 
         // DEVIATION(04 §6.3): an action from a notification of a recurring occurrence that the user has already

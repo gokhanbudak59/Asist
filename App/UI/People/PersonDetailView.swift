@@ -181,7 +181,7 @@ struct PersonDetailView: View {
         } header: {
             SectionHeader(title: "YENİDEN SOR")
         } footer: {
-            Text("Mesajı gönderdikten sonra seç; bu kişideki tüm takipler o zamana kadar ertelenir.")
+            Text("Mesajı gönderdikten sonra seç; bu kişideki takipler o zamana kadar ertelenir (zaten daha ileri tarihli olanlar değişmez).")
         }
     }
 
@@ -230,7 +230,8 @@ struct PersonDetailView: View {
         snoozeAll(ids, until: target)
     }
 
-    /// One toast "3 takip ertelendi · Yarın 16:00" with a merged undo, one haptic.
+    /// One toast "3 takip ertelendi · Yarın 16:00" with a merged undo, one haptic. Items already anchored at or after
+    /// the chosen time (a later deadline or snooze) are left unchanged — "ertele" never pulls a deadline earlier.
     private func snoozeAll(_ ids: [UUID], until target: Date) {
         let now = Date()
         let whole = AsistCalendar.floorToMinute(target)
@@ -240,18 +241,33 @@ struct PersonDetailView: View {
             return
         }
         var before: [Item] = []
+        var skipped = 0
         for id in ids {
+            guard let item = store.item(id), item.isOpen else { continue }
+            if let anchor = item.anchorDate, anchor >= whole {
+                skipped += 1
+                continue
+            }
             if let token = store.snooze(id, until: whole, at: now) {
                 before.append(contentsOf: token.before)
             }
         }
         guard !before.isEmpty else {
-            DetailItemActions.reportNil("takipleri ertele", store: store, toasts: toasts)
+            if skipped > 0 {
+                toasts.show(String(skipped) + " takip zaten daha ileri tarihli")
+                Haptics.selection()
+            } else {
+                DetailItemActions.reportNil("takipleri ertele", store: store, toasts: toasts)
+            }
             return
         }
         let label = TurkishDateFormatter.shortDateTime(whole, now: now, calendar: AppTime.calendar, includeTime: true)
         let undo = UndoToken(label: "Takipler ertelendi", before: before)
-        toasts.show(String(before.count) + " takip ertelendi · " + label, undo: undo)
+        var text = String(before.count) + " takip ertelendi · " + label
+        if skipped > 0 {
+            text += " · " + String(skipped) + " zaten daha ileri"
+        }
+        toasts.show(text, undo: undo)
         Haptics.success()
     }
 }

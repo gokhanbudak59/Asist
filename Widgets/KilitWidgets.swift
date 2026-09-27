@@ -63,7 +63,7 @@ struct SiradakiKilitView: View {
 
     private var content: some View {
         let snapshot = entry.snapshot
-        let first = snapshot.entries.first
+        let first = snapshot.visibleEntries(at: entry.date).first
         let link = first.map { (next: WidgetSnapshot.Entry) -> URL in WidgetLinks.item(next.id) } ?? WidgetLinks.today
         return VStack(alignment: .leading, spacing: 1) {
             Text(SiradakiKilitView.headline(for: entry))

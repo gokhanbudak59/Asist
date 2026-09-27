@@ -45,6 +45,14 @@ public enum ItemEditRules {
         if edited.dueDate != original.dueDate || edited.hasTime != original.hasTime {
             result.dueDate = edited.dueDate.map { (date: Date) -> Date in AsistCalendar.floorToMinute(date) }
             result.hasTime = edited.hasTime
+            // The store moved the due day while the sheet was open (a "Yaptım" advancing a recurrence, a move to the
+            // next workday, a roll-over) and the user changed only the clock / hasTime (same day as the snapshot):
+            // apply the new clock to the store's current day instead of writing the stale day back.
+            if let originalDue = original.dueDate, let editedDue = edited.dueDate, let currentDue = current.dueDate,
+               currentDue != originalDue, calendar.isDate(editedDue, inSameDayAs: originalDue) {
+                let clock = ClockTime(minutesOfDay: AsistCalendar.minuteOfDay(editedDue, calendar: calendar))
+                result.dueDate = AsistCalendar.date(on: currentDue, at: clock, calendar: calendar)
+            }
         }
         if edited.recurrence != original.recurrence {
             result.recurrence = edited.recurrence
@@ -73,7 +81,11 @@ public enum ItemEditRules {
         if !result.hasTime {
             result.isEvent = false
         }
-        if result.isEvent && !current.isEvent && result.leadTimesMinutes.isEmpty && settings.eventDefaultLeadMinutes > 0 {
+        // Default pre-alert only when the edited copy did not itself arrive as an event without leads: the sheet's
+        // Etkinlik toggle already applies the default, so an event with no leads there is the user's "Yok".
+        let eventLeadsChosen = edited.isEvent && edited.leadTimesMinutes.isEmpty
+        if result.isEvent && !current.isEvent && result.leadTimesMinutes.isEmpty && !eventLeadsChosen
+            && settings.eventDefaultLeadMinutes > 0 {
             result.leadTimesMinutes = [settings.eventDefaultLeadMinutes]
         }
         result.leadTimesMinutes = Array(Set(result.leadTimesMinutes.filter { $0 > 0 && $0 <= 527_040 })).sorted()

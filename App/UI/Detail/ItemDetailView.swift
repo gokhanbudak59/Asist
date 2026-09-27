@@ -1005,17 +1005,23 @@ struct ItemDetailView: View {
     }
 
     /// 07 §9.10: a new place (or trigger) re-arms the geofence — locationFiredAt is cleared and an old delivered
-    /// location notification is removed so the next sync does not record it again.
+    /// location notification is removed so the next sync does not record it again. Re-selecting the same place
+    /// and trigger after the reminder has fired ("· bildirildi") re-arms it for the next arrival/departure;
+    /// re-selecting an unfired (still armed) choice is a no-op.
     private func setPlace(_ id: UUID?, _ trigger: PlaceTrigger?) {
         guard let item = currentEditableItem() else { return }
         let newTrigger: PlaceTrigger? = id == nil ? nil : (trigger ?? .onArrive)
-        guard item.placeID != id || item.placeTrigger != newTrigger else { return }
+        let unchanged = item.placeID == id && item.placeTrigger == newTrigger
+        guard !unchanged || (id != nil && item.locationFiredAt != nil) else { return }
         applyEdit("yer", event: .edited) { edited in
             edited.placeID = id
             edited.placeTrigger = newTrigger
             edited.locationFiredAt = nil
         }
         LocationService.shared.forgetDelivered(itemID: itemID)
+        if unchanged, store.item(itemID)?.locationFiredAt == nil {
+            toasts.show("Konum hatırlatması yeniden kuruldu.")
+        }
     }
 
     private func setPriority(_ priority: Priority) {

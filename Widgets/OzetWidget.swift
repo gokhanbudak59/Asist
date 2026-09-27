@@ -97,7 +97,7 @@ struct OzetWidgetView: View {
 
     private var medium: some View {
         let counts = WidgetClock.counts(entry)
-        let rows = Array(entry.snapshot.entries.prefix(3))
+        let rows = Array(entry.snapshot.visibleEntries(at: entry.date).prefix(3))
         return HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 OzetCounterLine(count: counts.overdue, label: "geciken",

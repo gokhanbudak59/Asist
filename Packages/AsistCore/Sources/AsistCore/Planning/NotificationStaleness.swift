@@ -36,6 +36,40 @@ public enum NotificationStaleness {
         return deliveredAt <= done
     }
 
+    /// History events whose writers clear `locationFiredAt` through `Item.resetNagState()`: a completed occurrence
+    /// (markDone of a recurring item), a missed occurrence (roll-over), a new due date (date picker, "Düzenle",
+    /// clearing the due) and the end-of-day move. From that moment on the geofence is armed again (07 §9.10).
+    /// `.edited` is deliberately not one of them: it is also written by unrelated edits (checklist, priority), and a
+    /// place edit already removes the old delivery itself (ItemDetailView.setPlace → LocationService.forgetDelivered).
+    public static func rearmsLocation(_ event: HistoryEvent) -> Bool {
+        switch event {
+        case .occurrenceDone, .occurrenceMissed, .rescheduled, .movedEndOfDay:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Newest re-arm moment of the item's geofence (see `rearmsLocation`). Entries stamped more than `futureSkew`
+    /// after `now` (manual clock change) are ignored. nil = the geofence was never re-armed.
+    public static func locationRearmDate(of item: Item, now: Date) -> Date? {
+        let limit = now.addingTimeInterval(futureSkew)
+        var newest: Date? = nil
+        for entry in item.history where rearmsLocation(entry.event) && entry.date <= limit {
+            if let current = newest, current >= entry.date { continue }
+            newest = entry.date
+        }
+        return newest
+    }
+
+    /// True when a geofence notification of `item` delivered at `deliveredAt` belongs to a period before the
+    /// geofence was re-armed (the occurrence was completed / missed or the item rescheduled afterwards): recording
+    /// it again would set `locationFiredAt` for the *new* period and the geofence would never be added again.
+    public static func isLocationDeliveryBeforeRearm(_ item: Item, deliveredAt: Date, now: Date) -> Bool {
+        guard let rearm = locationRearmDate(of: item, now: now) else { return false }
+        return deliveredAt <= rearm
+    }
+
     /// The end-of-day action ("Sonraki iş gününe taşı") only applies on the day its notification was delivered.
     public static func isStaleEndOfDay(deliveredAt: Date, now: Date, calendar: Calendar) -> Bool {
         return !calendar.isDate(deliveredAt, inSameDayAs: now)

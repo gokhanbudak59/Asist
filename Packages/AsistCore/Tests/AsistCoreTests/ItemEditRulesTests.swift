@@ -117,20 +117,39 @@ final class ItemEditRulesTests: XCTestCase {
 
     // MARK: - Event, leads, recurrence
 
-    func testEventOnAddsTheDefaultLead() {
+    func testEventOnKeepsTheSheetsDefaultLead() {
+        // The sheet's Etkinlik toggle adds the default lead itself (as ItemDetailView.setEvent does).
         let base = reminder()
         var edited = base
         edited.isEvent = true
+        edited.leadTimesMinutes = [15]
         let outcome = apply(base, edited)
         XCTAssertEqual(outcome.event, HistoryEvent.edited)
         XCTAssertTrue(outcome.item.isEvent)
         XCTAssertEqual(outcome.item.leadTimesMinutes, [15])
 
+        // eventDefaultLeadMinutes == 0: the toggle adds nothing, and the rules add nothing either.
         var noDefault = AppSettings()
         noDefault.eventDefaultLeadMinutes = 0
-        let without = apply(base, edited, settings: noDefault)
+        var withoutLead = base
+        withoutLead.isEvent = true
+        let without = apply(base, withoutLead, settings: noDefault)
         XCTAssertTrue(without.item.isEvent)
         XCTAssertEqual(without.item.leadTimesMinutes, [])
+    }
+
+    func testEventOnWithOnUyariYokKeepsNoLead() {
+        // Etkinlik tapped (default 15 dk added by the sheet), then Ön uyarı → "Yok": the saved event has no lead.
+        let base = reminder()
+        XCTAssertEqual(base.leadTimesMinutes, [])
+        XCTAssertFalse(base.isEvent)
+        var edited = base
+        edited.isEvent = true
+        edited.leadTimesMinutes = []
+        let outcome = apply(base, edited)
+        XCTAssertTrue(outcome.changed)
+        XCTAssertTrue(outcome.item.isEvent)
+        XCTAssertEqual(outcome.item.leadTimesMinutes, [])
     }
 
     func testEventNeedsATimeAndAnEventableKind() {
@@ -206,6 +225,33 @@ final class ItemEditRulesTests: XCTestCase {
         XCTAssertEqual(outcome.item.checklist, current.checklist)
         XCTAssertEqual(outcome.item.notes, "Bildirimden eklenen not")
         XCTAssertEqual(outcome.item.dueDate, TestSupport.date("2026-09-29T15:00"))
+    }
+
+    func testClockOnlyEditIsRebasedOntoAConcurrentlyAdvancedDay() {
+        // "Her gün 09:00": while the sheet is open "Yaptım" advances the store copy to tomorrow 09:00; the user then
+        // taps the 14:00 chip (same day as the snapshot) → the new clock lands on tomorrow, not on the done occurrence.
+        let original = Item(kind: .reminder, title: "İlaç", dueDate: TestSupport.date("2026-09-27T09:00"),
+                            hasTime: true, recurrence: Recurrence(frequency: .daily),
+                            createdAt: TestSupport.date("2026-09-25T09:00"))
+        var current = original
+        current.dueDate = TestSupport.date("2026-09-28T09:00")
+        var edited = original
+        edited.dueDate = TestSupport.date("2026-09-27T14:00")
+        let outcome = apply(original, edited, onto: current)
+        XCTAssertTrue(outcome.changed)
+        XCTAssertEqual(outcome.event, HistoryEvent.rescheduled)
+        XCTAssertEqual(outcome.item.dueDate, TestSupport.date("2026-09-28T14:00"))
+        XCTAssertTrue(outcome.item.hasTime)
+    }
+
+    func testExplicitDayEditWinsOverAConcurrentlyAdvancedDay() {
+        let original = reminder()                                          // Mon 28 Sep 15:00
+        var current = original
+        current.dueDate = TestSupport.date("2026-09-29T15:00")
+        var edited = original
+        edited.dueDate = TestSupport.date("2026-10-01T10:00")              // the user picked another day
+        let outcome = apply(original, edited, onto: current)
+        XCTAssertEqual(outcome.item.dueDate, TestSupport.date("2026-10-01T10:00"))
     }
 
     func testEmptyPersonBecomesNil() {

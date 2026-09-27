@@ -74,6 +74,25 @@ public struct WidgetSnapshot: Codable, Equatable {
         return start <= date
     }
 
+    /// End of an event entry: anchor + Item.eventDurationMinutes (the same rule as Item.eventEnd; the app closes the
+    /// event at that instant on its next reconcile). nil for non-events and undated entries. Derived, so the stored
+    /// schema is unchanged.
+    public func eventEnd(_ entry: Entry) -> Date? {
+        guard entry.isEvent, let anchor = entry.anchor else { return nil }
+        return anchor.addingTimeInterval(TimeInterval(Item.eventDurationMinutes * 60))
+    }
+
+    /// true when `entry` is an event that has ended at `date` (the widget hides it without waiting for the app).
+    public func isEnded(_ entry: Entry, at date: Date) -> Bool {
+        guard let end = eventEnd(entry) else { return false }
+        return end <= date
+    }
+
+    /// Entries still worth showing at `date`: ended events dropped, order kept.
+    public func visibleEntries(at date: Date) -> [Entry] {
+        return entries.filter { (entry: Entry) -> Bool in !isEnded(entry, at: date) }
+    }
+
     /// Overdue count as time passes without the app running.
     public func overdueCount(at date: Date) -> Int {
         var added = 0
@@ -88,34 +107,42 @@ public struct WidgetSnapshot: Codable, Equatable {
     }
 
     /// "bugün" counter at `date`: same day as `generatedAt` → stored count minus today's entries that became overdue
-    /// since; another day → entries anchored on that day that are not overdue (approximate: entries are capped).
+    /// or (events) ended since; another day → entries anchored on that day that are neither overdue nor ended
+    /// (approximate: entries are capped).
     public func todayCount(at date: Date, calendar: Calendar) -> Int {
         if calendar.isDate(date, inSameDayAs: generatedAt) {
             var left: Int = self.todayCount       // the stored counter, not `todayCount(at:calendar:)`
             for entry in entries {
-                guard let start = entry.overdueAt, start > generatedAt, start <= date,
-                      let anchor = entry.anchor, calendar.isDate(anchor, inSameDayAs: generatedAt) else { continue }
-                left -= 1
+                guard let anchor = entry.anchor, calendar.isDate(anchor, inSameDayAs: generatedAt) else { continue }
+                if let start = entry.overdueAt, start > generatedAt, start <= date {
+                    left -= 1
+                } else if let end = eventEnd(entry), end > generatedAt, end <= date {
+                    left -= 1
+                }
             }
             return max(0, left)
         }
         var count = 0
         for entry in entries {
             guard let anchor = entry.anchor, calendar.isDate(anchor, inSameDayAs: date) else { continue }
-            if !isOverdue(entry, at: date) {
+            if !isOverdue(entry, at: date) && !isEnded(entry, at: date) {
                 count += 1
             }
         }
         return count
     }
 
-    /// Timeline instants after `from`: overdue transitions within 24 h plus the next midnight; sorted, unique, ≤ limit.
+    /// Timeline instants after `from`: overdue transitions and event ends within 24 h plus the next midnight;
+    /// sorted, unique, ≤ limit.
     public func timelineDates(after from: Date, calendar: Calendar, limit: Int) -> [Date] {
         let horizon = from.addingTimeInterval(24 * 3600)
         var unique = Set<Date>()
         for entry in entries {
             if let start = entry.overdueAt, start > from, start <= horizon {
                 unique.insert(start)
+            }
+            if let end = eventEnd(entry), end > from, end <= horizon {
+                unique.insert(end)
             }
         }
         let midnight = AsistCalendar.addingDays(1, to: calendar.startOfDay(for: from), calendar: calendar)

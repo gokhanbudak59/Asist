@@ -108,4 +108,70 @@ final class NotificationStalenessTests: XCTestCase {
         let justDone = dailyItem(due: "2026-09-29T14:00", doneAt: ["2026-09-28T13:59"])
         XCTAssertFalse(NotificationStaleness.protectsNearDue(justDone, now: now.addingTimeInterval(30)))
     }
+
+    // MARK: - Geofence re-arm (07 §9.10)
+
+    /// Recurring place item ("fabrikaya varınca") with an arrival trigger.
+    func placeItem(due: String) -> Item {
+        var item = dailyItem(due: due)
+        item.placeID = UUID()
+        item.placeTrigger = .onArrive
+        return item
+    }
+
+    func testLocationDeliveryBeforeCompletedOccurrenceIsSkipped() {
+        var item = placeItem(due: "2026-09-29T09:00")
+        item.appendHistory(.locationFired, at: d("2026-09-28T08:40"))
+        item.appendHistory(.occurrenceDone, at: d("2026-09-28T09:30"))
+        XCTAssertEqual(NotificationStaleness.locationRearmDate(of: item, now: d("2026-09-28T10:00")),
+                       d("2026-09-28T09:30"))
+        // The old 08:40 delivery still in Notification Center must not mark the next occurrence as fired.
+        XCTAssertTrue(NotificationStaleness.isLocationDeliveryBeforeRearm(item, deliveredAt: d("2026-09-28T08:40"),
+                                                                          now: d("2026-09-28T10:00")))
+        // The next occurrence's own delivery is recorded.
+        XCTAssertFalse(NotificationStaleness.isLocationDeliveryBeforeRearm(item, deliveredAt: d("2026-09-29T08:45"),
+                                                                           now: d("2026-09-29T08:46")))
+    }
+
+    func testLocationDeliveryBeforeMissedOccurrenceIsSkipped() {
+        // Delivered but never recorded, then a roll-over (reconcile step 2) re-arms the geofence before the sync.
+        var item = placeItem(due: "2026-09-29T09:00")
+        item.appendHistory(.occurrenceMissed, at: d("2026-09-29T10:00"))
+        XCTAssertTrue(NotificationStaleness.isLocationDeliveryBeforeRearm(item, deliveredAt: d("2026-09-28T08:40"),
+                                                                          now: d("2026-09-29T10:00")))
+        XCTAssertFalse(NotificationStaleness.isLocationDeliveryBeforeRearm(item, deliveredAt: d("2026-09-29T10:05"),
+                                                                           now: d("2026-09-29T10:06")))
+    }
+
+    func testLocationRearmByRescheduleAndEndOfDayMove() {
+        var single = Item(kind: .task, title: "Rapor", dueDate: d("2026-09-30T09:00"), hasTime: true,
+                          placeID: UUID(), placeTrigger: .onArrive, createdAt: d("2026-09-20T08:00"))
+        single.appendHistory(.rescheduled, at: d("2026-09-28T12:00"))
+        XCTAssertTrue(NotificationStaleness.isLocationDeliveryBeforeRearm(single, deliveredAt: d("2026-09-28T08:40"),
+                                                                          now: d("2026-09-28T13:00")))
+        single.appendHistory(.movedEndOfDay, at: d("2026-09-28T18:00"))
+        XCTAssertEqual(NotificationStaleness.locationRearmDate(of: single, now: d("2026-09-28T18:30")),
+                       d("2026-09-28T18:00"))
+        XCTAssertTrue(NotificationStaleness.isLocationDeliveryBeforeRearm(single, deliveredAt: d("2026-09-28T17:00"),
+                                                                          now: d("2026-09-28T18:30")))
+    }
+
+    func testLocationDeliveryWithoutRearmIsRecorded() {
+        // Only an unrelated edit and a snooze after the delivery: nothing re-armed the geofence.
+        var item = placeItem(due: "2026-09-29T09:00")
+        item.appendHistory(.edited, at: d("2026-09-28T09:00"))
+        item.appendHistory(.snoozed, at: d("2026-09-28T09:10"))
+        XCTAssertNil(NotificationStaleness.locationRearmDate(of: item, now: d("2026-09-28T10:00")))
+        XCTAssertFalse(NotificationStaleness.isLocationDeliveryBeforeRearm(item, deliveredAt: d("2026-09-28T08:40"),
+                                                                           now: d("2026-09-28T10:00")))
+    }
+
+    func testFutureDatedRearmIsIgnored() {
+        // A re-arm stamped in the future (clock was wrong) must not suppress every new delivery.
+        var item = placeItem(due: "2027-01-02T09:00")
+        item.appendHistory(.occurrenceDone, at: d("2027-01-01T09:20"))
+        XCTAssertNil(NotificationStaleness.locationRearmDate(of: item, now: d("2026-09-28T19:00")))
+        XCTAssertFalse(NotificationStaleness.isLocationDeliveryBeforeRearm(item, deliveredAt: d("2026-09-28T18:00"),
+                                                                           now: d("2026-09-28T19:00")))
+    }
 }
