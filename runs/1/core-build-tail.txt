@@ -1,0 +1,88 @@
+Building for debugging...
+[0/13] Write sources
+[2/13] Write swift-version-24593BA9C3E375BF.txt
+[4/52] Emitting module AsistCore
+[5/64] Compiling AsistCore Item.swift
+[6/64] Compiling AsistCore NagProfile.swift
+[7/64] Compiling AsistCore Project.swift
+[8/64] Compiling AsistCore Recurrence.swift
+[9/64] Compiling AsistCore Classifier.swift
+[10/64] Compiling AsistCore Confidence.swift
+[11/64] Compiling AsistCore DateResolver.swift
+[12/64] Compiling AsistCore CueExtractor.swift
+[13/64] Compiling AsistCore DateExtractor.swift
+[14/64] Compiling AsistCore LeadTimeExtractor.swift
+[15/64] Compiling AsistCore PersonExtractor.swift
+[16/64] Compiling AsistCore ProjectPlaceExtractor.swift
+[17/64] Compiling AsistCore RecurrenceExtractor.swift
+[18/64] Compiling AsistCore AgendaBuilder.swift
+[19/64] Compiling AsistCore NotificationCopy.swift
+[20/64] Compiling AsistCore AsistCore.swift
+[21/64] Compiling AsistCore ItemFactory.swift
+[22/64] Compiling AsistCore DeepLink.swift
+[23/64] Compiling AsistCore FuzzyMatcher.swift
+[24/64] Compiling AsistCore AppData.swift
+[25/64] Compiling AsistCore AppSettings.swift
+[26/64] Compiling AsistCore ChecklistTemplates.swift
+[27/64] Compiling AsistCore ClockTime.swift
+[28/64] Compiling AsistCore Codable+Lenient.swift
+[29/64] Compiling AsistCore Enums.swift
+[30/64] Compiling AsistCore Item+Logic.swift
+[31/64] Compiling AsistCore NotificationCatalog.swift
+[32/64] Compiling AsistCore PlanPostPass.swift
+[33/64] Compiling AsistCore PlannedNotification.swift
+[34/64] Compiling AsistCore RecurrenceEngine.swift
+[35/64] Compiling AsistCore AppGroupResolver.swift
+[36/64] Compiling AsistCore ProvisioningProfile.swift
+[37/64] Compiling AsistCore SigningExpiryPlanner.swift
+[38/64] Compiling AsistCore TurkishDateFormatter.swift
+[39/64] Compiling AsistCore TurkishSpeech.swift
+[40/64] Compiling AsistCore TurkishText.swift
+[41/64] Compiling AsistCore AsistCalendar.swift
+[42/64] Compiling AsistCore StableHash.swift
+[43/64] Compiling AsistCore TimeExtractor.swift
+[44/64] Compiling AsistCore Lexicon.swift
+[45/64] Compiling AsistCore Normalizer.swift
+[46/64] Compiling AsistCore ParseContext.swift
+[47/64] Compiling AsistCore ParserSettings+App.swift
+[48/64] Compiling AsistCore ParserTypes.swift
+[49/64] Compiling AsistCore TitleBuilder.swift
+[50/64] Compiling AsistCore Tokenizer.swift
+[51/64] Compiling AsistCore TurkishNumbers.swift
+[52/64] Compiling AsistCore TurkishParser.swift
+[53/64] Compiling AsistCore NagChain.swift
+[54/64] Compiling AsistCore NagPlanner.swift
+[55/65] Wrapping AST for AsistCore for debugging
+[57/79] Emitting module AsistCoreTests
+[58/83] Compiling AsistCoreTests NormalizerTests.swift
+[59/83] Compiling AsistCoreTests NumberTests.swift
+[60/83] Compiling AsistCoreTests ParserPropertyTests.swift
+[61/83] Compiling AsistCoreTests PlatformTests.swift
+[62/83] Compiling AsistCoreTests RecurrenceEngineTests.swift
+[63/83] Compiling AsistCoreTests TestSupport.swift
+[64/83] Compiling AsistCoreTests TurkishSpeechTests.swift
+[65/83] Compiling AsistCoreTests TurkishTextTests.swift
+[66/83] Compiling AsistCoreTests AgendaBuilderTests.swift
+[67/83] Compiling AsistCoreTests CorpusTests.swift
+[68/83] Compiling AsistCoreTests DateResolverTests.swift
+[69/83] Compiling AsistCoreTests DeepLinkTests.swift
+[70/83] Compiling AsistCoreTests FormatterTests.swift
+[71/83] Compiling AsistCoreTests FuzzyMatcherTests.swift
+[72/83] Compiling AsistCoreTests ItemFactoryTests.swift
+[73/83] Compiling AsistCoreTests ModelCodingTests.swift
+[74/83] Compiling AsistCoreTests NagPlannerTests.swift
+[75/84] /__w/Asist/Asist/Packages/AsistCore/.build/x86_64-unknown-linux-gnu/debug/AsistCorePackageDiscoveredTests.derived/all-discovered-tests.swift
+[76/84] Write sources
+[77/84] Wrapping AST for AsistCoreTests for debugging
+[79/87] Compiling AsistCorePackageDiscoveredTests all-discovered-tests.swift
+[80/87] Emitting module AsistCorePackageDiscoveredTests
+[81/87] Compiling AsistCorePackageDiscoveredTests AsistCoreTests.swift
+[82/88] /__w/Asist/Asist/Packages/AsistCore/.build/x86_64-unknown-linux-gnu/debug/AsistCorePackageTests.derived/runner.swift
+[83/88] Write sources
+[84/88] Wrapping AST for AsistCorePackageDiscoveredTests for debugging
+[86/90] Emitting module AsistCorePackageTests
+[87/90] Compiling AsistCorePackageTests runner.swift
+[88/91] Wrapping AST for AsistCorePackageTests for debugging
+[89/91] Write Objects.LinkFileList
+[90/91] Linking AsistCorePackageTests.xctest
+Build complete! (17.88s)

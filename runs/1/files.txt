@@ -1,0 +1,11 @@
+logs:
+core-gunlukleri
+derleme-gunlukleri
+
+logs/core-gunlukleri:
+swift-build.log
+swift-test.log
+
+logs/derleme-gunlukleri:
+xcodebuild.log
+xcodegen.log
