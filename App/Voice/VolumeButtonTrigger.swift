@@ -16,6 +16,8 @@ final class VolumeButtonTrigger {
 
     var onDoublePress: (() -> Void)?
     var onLowVolumeChanged: ((Bool) -> Void)?
+    /// Armed state changes (device feedback 2026-09-27: the Today screen shows whether ×2 is ready).
+    var onArmedChanged: ((Bool) -> Void)?
     var pressWindow: TimeInterval = 1.0          // kullanıcı şartı: max 1 sn
     var confirmDelay: TimeInterval = 0.3         // basılı tutmayı ayırt etmek için
     var cooldown: TimeInterval = 1.5
@@ -55,17 +57,21 @@ final class VolumeButtonTrigger {
         sessionObservers.append(VolumeButtonTrigger.makeMediaResetObserver(owner: self))
         isArmed = true
         updateLowVolumeFlag(currentVolume())
+        AsistLog.info("Ses kısma ×2 tetikleyicisi hazır", .voice)
+        onArmedChanged?(true)
         return true
     }
 
     /// Stops observing. Does not deactivate the audio session (the caller decides: listening re-configures it,
     /// background deactivates it).
     func disarm() {
+        let wasArmed = isArmed
         observation?.invalidate()
         observation = nil
         removeSessionObservers()
         resetGesture()
         isArmed = false
+        if wasArmed { onArmedChanged?(false) }
     }
 
     func currentVolume() -> Float {

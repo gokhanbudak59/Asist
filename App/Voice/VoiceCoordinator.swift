@@ -19,6 +19,8 @@ final class VoiceCoordinator {
     /// Last user-facing error/info (Turkish, 03 §7.12 listen.*); cleared on next start.
     private(set) var message: String? = nil
     private(set) var volumeTooLow = false
+    /// true while the volume-down ×2 trigger is observing (foreground, idle, enabled).
+    private(set) var triggerArmed = false
     /// Overlay visible while preparing/listening/processing.
     var isOverlayVisible: Bool {
         phase == .preparing || phase == .listening || phase == .processing
@@ -52,6 +54,9 @@ final class VoiceCoordinator {
         }
         trigger.onLowVolumeChanged = { [weak self] low in
             self?.volumeTooLow = low
+        }
+        trigger.onArmedChanged = { [weak self] armed in
+            self?.triggerArmed = armed
         }
         listener.onPartial = { [weak self] text in
             self?.partialText = text

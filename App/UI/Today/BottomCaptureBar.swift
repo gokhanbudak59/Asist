@@ -18,6 +18,11 @@ struct BottomCaptureBar: View {
                     .foregroundStyle(Color.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+            } else if voice.triggerArmed && store.settings.volumeTriggerEnabled {
+                Label("Ses kısma tuşuna 2 kez bas → dinlerim", systemImage: "speaker.wave.1")
+                    .font(.caption)
+                    .foregroundStyle(Color.secondary)
+                    .accessibilityLabel("Ses kısma tuşuna iki kez basarak dinlemeyi başlatabilirsin")
             }
             HStack(alignment: .center, spacing: Metrics.padding) {
                 Button {
