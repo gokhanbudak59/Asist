@@ -1,0 +1,17 @@
+OK     01-bugun
+OK     02-bugun-karanlik
+OK     03-listeler
+OK     04-projeler
+OK     05-ayarlar
+OK     06-ayarlar-tetikleyiciler
+OK     07-kayit-detay
+OK     07a-kayit-duzenle
+OK     08-gun-sonu
+OK     09-yaz
+OK     10-bugun-sekme
+OK     10a-haftalik-rapor
+OK     10b-kisiler
+OK     10c-konumlar
+OK     10d-takvim
+OK     10e-guncelleme
+OK     11-tanitim

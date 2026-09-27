@@ -1,0 +1,17 @@
+01-bugun.png — Bugün (açık tema)
+02-bugun-karanlik.png — Bugün (karanlık tema)
+03-listeler.png — Listeler sekmesi (asist://sekme/listeler)
+04-projeler.png — Projeler sekmesi (asist://sekme/projeler)
+05-ayarlar.png — Ayarlar sekmesi (asist://sekme/ayarlar)
+06-ayarlar-tetikleyiciler.png — Ayarlar › Tetikleyiciler
+07-kayit-detay.png — Kayıt ayrıntısı (asist://kayit/5EED0001-0000-4000-8000-000000000014)
+07a-kayit-duzenle.png — Düzenle sayfası (asist://kayit/…?eylem=duzenle)
+08-gun-sonu.png — Gün sonu (asist://gunsonu)
+09-yaz.png — Yaz sayfası (asist://yaz)
+10-bugun-sekme.png — asist://sekme/bugun (sayfa kapanır, Bugün kökü)
+10a-haftalik-rapor.png — Haftalık rapor (asist://ekran/haftalik-rapor)
+10b-kisiler.png — Kişiler (asist://ekran/kisiler)
+10c-konumlar.png — Ayarlar › Konumlar (asist://ekran/konumlar)
+10d-takvim.png — Ayarlar › Takvim (asist://ekran/takvim)
+10e-guncelleme.png — Ayarlar › Güncelleme (asist://ekran/guncelleme)
+11-tanitim.png — Temiz kurulum: tanıtım ekranı
