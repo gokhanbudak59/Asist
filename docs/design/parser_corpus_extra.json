@@ -1,0 +1,1129 @@
+{
+ "version": 1,
+ "description": "Asist parser corpus EXTENSION from product review 05b_critique_product.md. Same shape as parser_corpus.json. Every case is status=proposed: it documents a realistic work utterance the current 02 spec/corpus mishandles, with the result the user expects. Merge a case into parser_corpus.json only together with the rule change named in its proposedRule (and update the cases listed in conflictsWith). New expected keys: expected.leadMinutes (needs ParsedItem.leadTimesMinutes) and command.targetDate (needs ParsedCommand.targetDate).",
+ "timeZone": "Europe/Istanbul",
+ "referenceNows": {
+  "sun": "2026-09-27T10:30",
+  "tue_morning": "2026-09-29T09:15",
+  "tue_evening": "2026-09-29T19:40",
+  "fri_late": "2026-10-02T23:10",
+  "mon_early": "2026-09-28T06:05",
+  "dec31": "2026-12-31T16:00",
+  "month_end": "2026-10-30T12:00",
+  "mon_work": "2026-09-28T10:10"
+ },
+ "referenceNowWeekdays": {
+  "sun": "Pazar",
+  "tue_morning": "Salı",
+  "tue_evening": "Salı",
+  "fri_late": "Cuma",
+  "mon_early": "Pazartesi",
+  "dec31": "Perşembe",
+  "month_end": "Cuma",
+  "mon_work": "Pazartesi"
+ },
+ "settings": {
+  "defaultDayTime": "09:00",
+  "sabah": "09:00",
+  "ogle": "12:00",
+  "ogledenSonra": "14:00",
+  "aksamustu": "17:00",
+  "aksam": "19:00",
+  "gece": "22:00",
+  "mesaiBasi": "08:30",
+  "mesaiBitimi": "17:30",
+  "birazdanMinutes": 15,
+  "belirsizSaatlerOgledenSonra": true,
+  "smartModeThreshold": 0.6,
+  "autoSaveThreshold": 0.8,
+  "knownProjects": [
+   "Arka Cep",
+   "Hat 3",
+   "Kaynak Robotu",
+   "Bakım"
+  ],
+  "knownPlaces": [
+   "Fabrika",
+   "Ev",
+   "Ofis"
+  ],
+  "knownPeople": [],
+  "hemenMinutes": 5,
+  "ogledenOnce": "11:00"
+ },
+ "fieldNotes": {
+  "due": "Local time in timeZone, 'YYYY-MM-DDTHH:mm'. For snooze commands it is the new due (command.date). null = must be nil.",
+  "title": "Exact expected string; null = not checked (always null for commands).",
+  "recurrence": "freq daily|weekly|monthly|yearly; weekdays ISO 1=Pazartesi..7=Pazar; monthDay -1 = last day of month.",
+  "place": "{name, trigger: onArrive|onLeave} or null.",
+  "command": "Only keys present are compared. query is compared after Turkish lowercasing + whitespace collapse. date is 'YYYY-MM-DD'.",
+  "person/project": "Read from item, or from command for commands.",
+  "minConfidence/maxConfidence": "confidence >= minConfidence; when maxConfidence is present, confidence <= maxConfidence (low-confidence cases).",
+  "status": "proposed = expected behaviour after the rule in proposedRule is adopted; the current spec fails these cases.",
+  "gap": "What the current 02 rules produce / why the case fails today.",
+  "proposedRule": "Rule id from 05b §6 (G1…G12) and the concrete lexicon/grammar change.",
+  "conflictsWith": "Existing parser_corpus.json case ids whose expectation must change if the rule is adopted.",
+  "leadMinutes": "Proposed ParsedItem.leadTimesMinutes (minutes before due). Absent = not checked.",
+  "targetDate": "Proposed ParsedCommand.targetDate for snooze: day filter of the item to move ('YYYY-MM-DD'); command.date/due stays the NEW date.",
+  "settings.hemenMinutes / settings.ogledenOnce": "Proposed ParserSettings additions (defaults 5 min / 11:00)."
+ },
+ "cases": [
+  {
+   "id": "xeq-001",
+   "now": "sun",
+   "input": "Hat 2'de konveyör hızını yarın ayarla",
+   "tags": [
+    "equipment-number",
+    "G1"
+   ],
+   "status": "proposed",
+   "gap": "Unknown line 'Hat 2' (only 'Hat 3' is a known project): '2'de' is read as clock 2 -> PM rule -> 14:00.",
+   "proposedRule": "G1: N+LOC/DAT directly after an equipment noun (hat, hattı, istasyon, robot, hücre, pano, kat, bant, konveyör, eksen, makine, kabin, no, numara) is part of the noun phrase, never a clock.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Hat 2'de konveyör hızını ayarla",
+    "due": "2026-09-28T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xeq-002",
+   "now": "sun",
+   "input": "İstasyon 5'te hava kaçağı var, cuma bakılsın",
+   "tags": [
+    "equipment-number",
+    "G1"
+   ],
+   "status": "proposed",
+   "gap": "'5'te' -> 17:00 on Friday instead of the default day time.",
+   "proposedRule": "G1",
+   "expected": {
+    "kind": "reminder",
+    "title": "İstasyon 5'te hava kaçağı var bakılsın",
+    "due": "2026-10-02T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xeq-003",
+   "now": "mon_work",
+   "input": "Pano 2'de klemens gevşek, yarın sabah baktır",
+   "tags": [
+    "equipment-number",
+    "G1",
+    "daypart"
+   ],
+   "status": "proposed",
+   "gap": "'2'de' competes with 'yarın sabah' (non-adjacent AM qualifier): current rules give 14:00 or 02:00, never 09:00.",
+   "proposedRule": "G1",
+   "expected": {
+    "kind": "reminder",
+    "title": "Pano 2'de klemens gevşek baktır",
+    "due": "2026-09-29T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xeq-004",
+   "now": "sun",
+   "input": "3 nolu robotun programını cuma yedekle",
+   "tags": [
+    "equipment-number",
+    "G1",
+    "unusedNumber"
+   ],
+   "status": "proposed",
+   "gap": "'3' raises unusedNumber (-0.10) although 'nolu/numaralı' makes it part of a name -> needless confirm card.",
+   "proposedRule": "G1: number followed by nolu/numaralı/no'lu/numara is consumed as part of the noun; no unusedNumber flag.",
+   "expected": {
+    "kind": "reminder",
+    "title": "3 nolu robotun programını yedekle",
+    "due": "2026-10-02T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xwai-001",
+   "now": "mon_work",
+   "input": "Sürücüler perşembe gelecek",
+   "tags": [
+    "waiting",
+    "G2",
+    "gelecek-final"
+   ],
+   "status": "proposed",
+   "gap": "'gelecek' is excluded as a waiting verb (homonym of 'next'); utterance becomes a reminder titled 'Sürücüler gelecek'. P7 would also turn the dictation-capitalised 'Sürücüler' into a person.",
+   "proposedRule": "G2: 'gelecek' as the LAST token (not followed by hafta/ay/yıl/sene/weekday) is a waiting verb. P7 at index 0 rejects plural (-ler/-lar) and common nouns (tedarikçi, müşteri, firma, servis, ekip, malzeme, sürücü...).",
+   "expected": {
+    "kind": "waiting",
+    "title": "Sürücüler",
+    "due": "2026-10-01T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   }
+  },
+  {
+   "id": "xwai-002",
+   "now": "mon_work",
+   "input": "Ahmet yarın haber verecek",
+   "tags": [
+    "waiting",
+    "G2"
+   ],
+   "status": "proposed",
+   "gap": "'haber verecek' is not in the waiting-verb list (only cevap/yanıt verecek).",
+   "proposedRule": "G2: add haber verecek, bilgi verecek, dönüş sağlayacak.",
+   "expected": {
+    "kind": "waiting",
+    "title": "Dönüş bekleniyor",
+    "due": "2026-09-29T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Ahmet",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   }
+  },
+  {
+   "id": "xwai-003",
+   "now": "sun",
+   "input": "Siemens'ten teklif bekliyoruz",
+   "tags": [
+    "waiting",
+    "G2",
+    "1pl"
+   ],
+   "status": "proposed",
+   "gap": "1st person plural 'bekliyoruz' (team voice, very common for a manager) is not a waiting cue.",
+   "proposedRule": "G2: add bekliyoruz, bekleniyor, bekleyeceğiz, beklemedeyiz.",
+   "expected": {
+    "kind": "waiting",
+    "title": "Teklif",
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Siemens",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xwai-004",
+   "now": "mon_work",
+   "input": "Mehmet test raporunu akşama kadar atacak",
+   "tags": [
+    "waiting",
+    "G2",
+    "deadline"
+   ],
+   "status": "proposed",
+   "gap": "'atacak' (mail/rapor atacak) missing from the waiting-verb list.",
+   "proposedRule": "G2: add atacak, paylaşacak, yükleyecek, çıkaracak, kesecek (fatura), ayarlayacak, bitirecek, düzeltecek, onaylayacak(already).",
+   "expected": {
+    "kind": "waiting",
+    "title": "Test raporu",
+    "due": "2026-09-28T19:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Mehmet",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   }
+  },
+  {
+   "id": "xwai-005",
+   "now": "sun",
+   "input": "Elektrik projesini Hakan Bey paylaşacak",
+   "tags": [
+    "waiting",
+    "G2",
+    "project-false-positive"
+   ],
+   "status": "proposed",
+   "gap": "'paylaşacak' missing; also 'Elektrik projesi' is a DOCUMENT (electrical drawings) - the app must not propose 'Yeni proje: Elektrik'.",
+   "proposedRule": "G2 + app rule: 'Yeni proje' chip unselected by default and suppressed for elektrik/pnömatik/hidrolik/mekanik/yazılım/PLC/TIA/otomasyon/montaj projesi.",
+   "expected": {
+    "kind": "waiting",
+    "title": "Elektrik projesi",
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Hakan Bey",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   }
+  },
+  {
+   "id": "xsnz-001",
+   "now": "sun",
+   "input": "Teklif toplantısını perşembeye kaydır",
+   "tags": [
+    "snooze",
+    "G3"
+   ],
+   "status": "proposed",
+   "gap": "'kaydır' is listed in 03 §5.6 but not in 02 §10.5 snooze cues.",
+   "proposedRule": "G3: snooze cues += kaydır, taşı, ötele(exists), sonraya at, sonraya bırak, DATE+DAT bırak, DATE+DAT al (only when the object is a pronoun or ends with işini/hatırlatmasını/görevini/toplantısını, or no object).",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": "2026-10-01T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "snooze",
+     "query": "teklif toplantısı"
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xsnz-002",
+   "now": "sun",
+   "input": "bunu yarına al",
+   "tags": [
+    "snooze",
+    "G3",
+    "al-ambiguity"
+   ],
+   "status": "proposed",
+   "gap": "'al' is a content verb (buy/take) -> task 'Bunu al' tomorrow.",
+   "proposedRule": "G3 (pronoun object + DAT date + al => snooze)",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": "2026-09-28T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "snooze",
+     "query": null
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xsnz-003",
+   "now": "sun",
+   "input": "raporu pazartesiye taşı",
+   "tags": [
+    "snooze",
+    "G3"
+   ],
+   "status": "proposed",
+   "gap": "'taşı' not a snooze cue -> task 'Raporu taşı' Monday.",
+   "proposedRule": "G3",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": "2026-09-28T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "snooze",
+     "query": "raporu"
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xsnz-004",
+   "now": "fri_late",
+   "input": "Kalibrasyon işini haftaya bırak",
+   "tags": [
+    "snooze",
+    "G3",
+    "haftaya-alone"
+   ],
+   "status": "proposed",
+   "gap": "'bırak' not a snooze cue; and 'haftaya' alone = +7 days (Fri 9 Oct) in 02, but 03 §5.7 says next week's Monday.",
+   "proposedRule": "G3 + decision D-HAFTAYA: 'haftaya'/'gelecek hafta' WITHOUT weekday = next week's first workday at default time.",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": "2026-10-05T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "snooze",
+     "query": "kalibrasyon işi"
+    },
+    "minConfidence": 0.85
+   },
+   "conflictsWith": [
+    "day-008",
+    "day-009"
+   ]
+  },
+  {
+   "id": "xsnz-005",
+   "now": "sun",
+   "input": "cuma günkü toplantıyı pazartesiye ertele",
+   "tags": [
+    "snooze",
+    "G3",
+    "target-day"
+   ],
+   "status": "proposed",
+   "gap": "ParsedCommand has one `date`; for snooze it is the NEW date, so the target-day filter ('cuma günkü') is lost and the matcher may pick another meeting. 'günkü' is also not a recognised weekday glue word.",
+   "proposedRule": "API: add ParsedCommand.targetDate (day filter for snooze); lexicon: weekday + günkü/günki.",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": "2026-09-28T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "snooze",
+     "query": "toplantı",
+     "targetDate": "2026-10-02"
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xcnl-001",
+   "now": "sun",
+   "input": "Hat 3 toplantısı iptal oldu",
+   "tags": [
+    "cancel",
+    "G4"
+   ],
+   "status": "proposed",
+   "gap": "'iptal oldu / iptal edildi' (reported cancellation) is not recognised because 'oldu' follows the cue.",
+   "proposedRule": "G4: cancel cues += iptal oldu, iptal edildi, yapılmayacak, gerek kalmadı(exists).",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": "Hat 3",
+    "place": null,
+    "command": {
+     "type": "cancel",
+     "query": "hat 3 toplantısı"
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xcnl-002",
+   "now": "sun",
+   "input": "boş ver onu",
+   "tags": [
+    "cancel",
+    "G4",
+    "dictation-split"
+   ],
+   "status": "proposed",
+   "gap": "Lexicon has 'boşver' (one word); dictation writes 'boş ver'.",
+   "proposedRule": "G4: add two-token 'boş ver'.",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "cancel",
+     "query": null
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xcmp-001",
+   "now": "sun",
+   "input": "sipariş formunu hallettik",
+   "tags": [
+    "complete",
+    "G5",
+    "1pl"
+   ],
+   "status": "proposed",
+   "gap": "Only 1sg past (-DIm) counts; 1pl (-DIk: hallettik, gönderdik, yaptık) is very common for a team lead.",
+   "proposedRule": "G5: accept -DIk / -DIk twin forms wherever -DIm is accepted.",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "complete",
+     "query": "sipariş formu"
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xcmp-002",
+   "now": "sun",
+   "input": "PLC yedeğini aldık",
+   "tags": [
+    "complete",
+    "G5",
+    "1pl",
+    "content-verb"
+   ],
+   "status": "proposed",
+   "gap": "Content-verb completion list is 1sg only (aldım).",
+   "proposedRule": "G5",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "complete",
+     "query": "plc yedeği al"
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xcmp-003",
+   "now": "sun",
+   "input": "Mehmet'ten çizimler geldi",
+   "tags": [
+    "complete",
+    "G5",
+    "waiting-received"
+   ],
+   "status": "proposed",
+   "gap": "03 §5.6 lists 'geldi (takip)' as completion; 02 has no such cue -> reminder/note titled 'Mehmet'ten çizimler geldi'.",
+   "proposedRule": "G5: 'geldi / ulaştı / elime geçti / teslim alındı' at the end = complete (preferably of waiting items).",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Mehmet",
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "complete",
+     "query": "mehmet çizimler"
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xcmp-004",
+   "now": "sun",
+   "input": "teklif gitti",
+   "tags": [
+    "complete",
+    "G5"
+   ],
+   "status": "proposed",
+   "gap": "'gitti / gönderildi / iletildi' (passive/3sg completion) not recognised.",
+   "proposedRule": "G5",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "complete",
+     "query": "teklif"
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xqry-001",
+   "now": "sun",
+   "input": "neyi unuttum",
+   "tags": [
+    "query",
+    "G6",
+    "misread-as-complete"
+   ],
+   "status": "proposed",
+   "gap": "DANGEROUS: 'unuttum' matches the generic 1sg past rule -> complete command with target 'neyi'. 03 §5.6 lists it as a query.",
+   "proposedRule": "G6: 'ne(yi|leri) unuttum / kaçırdım / atladım' = query overdue; checked BEFORE the generic -DIm completion rule.",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "query",
+     "scope": "overdue"
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xqry-002",
+   "now": "mon_work",
+   "input": "bugün neyi kaçırdım",
+   "tags": [
+    "query",
+    "G6",
+    "misread-as-complete"
+   ],
+   "status": "proposed",
+   "gap": "Same as xqry-001 ('kaçırdım' = generic past -> complete).",
+   "proposedRule": "G6",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "query",
+     "scope": "overdue"
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xqry-003",
+   "now": "sun",
+   "input": "yarın toplantım var mı",
+   "tags": [
+    "query",
+    "G6"
+   ],
+   "status": "proposed",
+   "gap": "Question form 'var mı' is not a query phrase; 'toplantım' counts as content -> reminder 'Toplantım var mı' tomorrow 09:00.",
+   "proposedRule": "G6: '(… ) var mı' = query; content noun becomes a text filter (new ParsedCommand.queryText use for queries).",
+   "expected": {
+    "kind": "command",
+    "title": null,
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": {
+     "type": "query",
+     "scope": "tomorrow"
+    },
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xtim-001",
+   "now": "sun",
+   "input": "yarın 4 gibi Ahmet'i ara",
+   "tags": [
+    "time",
+    "G7",
+    "gibi"
+   ],
+   "status": "proposed",
+   "gap": "A bare hour without saat/suffix is not a clock, so '4 gibi' is ignored (09:00 + unusedNumber).",
+   "proposedRule": "G7: N (1…24) followed by gibi/civarı/civarında/sularında/raddelerinde is a clock phrase.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Ahmet'i ara",
+    "due": "2026-09-28T16:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Ahmet",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xtim-002",
+   "now": "sun",
+   "input": "Salı sabahı Ahmet'le kalite toplantısı",
+   "tags": [
+    "time",
+    "G7",
+    "daypart-possessive"
+   ],
+   "status": "proposed",
+   "gap": "Possessive dayparts 'sabahı / öğleni / akşamı / gecesi' (salı sabahı, cuma akşamı) are missing from §5.5; 'sabahı' leaks into the title.",
+   "proposedRule": "G7: daypart keys += sabahi, sabahi(nda), oglesi, aksami, aksamustu(nu), gecesi (+LOC).",
+   "expected": {
+    "kind": "reminder",
+    "title": "Ahmet'le kalite toplantısı",
+    "due": "2026-09-29T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Ahmet",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xtim-003",
+   "now": "mon_work",
+   "input": "öğleden önce sipariş formunu imzala",
+   "tags": [
+    "time",
+    "G7",
+    "ogleden-once"
+   ],
+   "status": "proposed",
+   "gap": "'öğleden önce' has no daypart; 'öğle' may be matched (12:00) and 'önce' pollutes the title.",
+   "proposedRule": "G7: new setting ogledenOnce = 11:00; keys ogleden once, ogleye kadar, ogleden evvel.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Sipariş formunu imzala",
+    "due": "2026-09-28T11:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   }
+  },
+  {
+   "id": "xtim-004",
+   "now": "mon_work",
+   "input": "bugün içinde teklif revizyonunu gönder",
+   "tags": [
+    "time",
+    "G7",
+    "today-policy"
+   ],
+   "status": "proposed",
+   "gap": "'içinde' after a day word is not glue -> title pollution ('İçinde teklif…') or a broken duration parse.",
+   "proposedRule": "G7: 'bugün içinde / gün içinde / bugün bir ara' = today policy (8.2a) with hasTime=false.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Teklif revizyonunu gönder",
+    "due": "2026-09-28T11:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   }
+  },
+  {
+   "id": "xtim-005",
+   "now": "sun",
+   "input": "yarın 10'dan sonra Ahmet'i ara",
+   "tags": [
+    "time",
+    "G7",
+    "ablative-hour"
+   ],
+   "status": "proposed",
+   "gap": "Clock grammar accepts only LOC/DAT suffixes; 'N'dan sonra' (after 10) is ignored or misread as a duration.",
+   "proposedRule": "G7: N+ABL sonra (and N+DAT doğru) = clock N.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Ahmet'i ara",
+    "due": "2026-09-28T10:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Ahmet",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xtim-006",
+   "now": "mon_work",
+   "input": "öğle yemeğinden sonra Ahmet'i ara",
+   "tags": [
+    "time",
+    "G7",
+    "after-lunch"
+   ],
+   "status": "proposed",
+   "gap": "'öğle yemeğinde' exists but 'öğle yemeğinden sonra' does not: result is 12:00 (before lunch ends) with 'yemeğinden sonra' in the title.",
+   "proposedRule": "G7: 'öğle yemeğinden sonra / öğle arasından sonra / öğleden sonra ilk iş' = ogle + 60 min.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Ahmet'i ara",
+    "due": "2026-09-28T13:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Ahmet",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   },
+   "conflictsWith": [
+    "dp-003"
+   ]
+  },
+  {
+   "id": "xtim-007",
+   "now": "sun",
+   "input": "bu gece vardiyada saat 3'te fırın sıcaklığını kontrol et",
+   "tags": [
+    "time",
+    "G7",
+    "night-shift"
+   ],
+   "status": "proposed",
+   "gap": "The NIGHT qualifier only applies when adjacent to the clock; 'bu gece … saat 3'te' becomes today 15:00 (PM rule) + conflicting daypart.",
+   "proposedRule": "G7: an explicit 'bu gece / gece vardiyasında' anywhere in the utterance qualifies a 1–6 clock as NIGHT.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Vardiyada fırın sıcaklığını kontrol et",
+    "due": "2026-09-28T03:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   }
+  },
+  {
+   "id": "xcor-001",
+   "now": "sun",
+   "input": "yarın 3'te hayır 4'te Ahmet'i ara",
+   "tags": [
+    "correction",
+    "G8"
+   ],
+   "status": "proposed",
+   "gap": "Two clocks: the spec defines merging only for multiple DAY expressions (first wins); a spoken correction keeps the wrong (first) value.",
+   "proposedRule": "G8: 'hayır / yok / pardon / yani / değil de / yok yok' between two values of the same type => the LAST value wins; the marker is consumed.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Ahmet'i ara",
+    "due": "2026-09-28T16:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": "Ahmet",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   }
+  },
+  {
+   "id": "xcor-002",
+   "now": "sun",
+   "input": "yarın değil öbür gün Hat 3 raporunu gönder",
+   "tags": [
+    "correction",
+    "G8"
+   ],
+   "status": "proposed",
+   "gap": "'yarın değil öbür gün' -> conflictingDates, FIRST date (yarın) kept = exactly the date the user rejected.",
+   "proposedRule": "G8",
+   "expected": {
+    "kind": "reminder",
+    "title": "Hat 3 raporunu gönder",
+    "due": "2026-09-29T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": "Hat 3",
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   }
+  },
+  {
+   "id": "xpri-001",
+   "now": "sun",
+   "input": "çok acil Ahmet Bey'i hemen ara",
+   "tags": [
+    "priority",
+    "G9",
+    "hemen"
+   ],
+   "status": "proposed",
+   "gap": "Corpus pri-009 expects an UNDATED critical task: the most urgent thing he says never produces a notification.",
+   "proposedRule": "G9: 'hemen / şimdi / derhal / acilen' with no other time => due = now + hemenMinutes (5).",
+   "expected": {
+    "kind": "reminder",
+    "title": "Ahmet Bey'i ara",
+    "due": "2026-09-27T10:35",
+    "recurrence": null,
+    "priority": "critical",
+    "person": "Ahmet Bey",
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.85
+   },
+   "conflictsWith": [
+    "pri-009"
+   ]
+  },
+  {
+   "id": "xpri-002",
+   "now": "mon_work",
+   "input": "acil değil ama bu hafta Profinet adreslerini kontrol et",
+   "tags": [
+    "priority",
+    "G9",
+    "bu-hafta"
+   ],
+   "status": "proposed",
+   "gap": "'bu hafta' is only a query scope; as an item deadline it is ignored -> undated low task that never resurfaces.",
+   "proposedRule": "G9: 'bu hafta (içinde) / hafta bitmeden' = last workday of the current week at default time, flag vagueDate.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Profinet adreslerini kontrol et",
+    "due": "2026-10-02T09:00",
+    "recurrence": null,
+    "priority": "low",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.75
+   }
+  },
+  {
+   "id": "xlead-001",
+   "now": "sun",
+   "input": "Perşembe 14'te ABB ile toplantı var, yarım saat önce hatırlat",
+   "tags": [
+    "lead-time",
+    "G10",
+    "03-example-9"
+   ],
+   "status": "proposed",
+   "gap": "03 §5.8 #9 exactly: 'yarım saat önce' is not extracted (04 says pre-alerts only via detail screen) and stays in the title; the user believes he will be warned at 13:30 and is not.",
+   "proposedRule": "G10: 'DURATION önce (hatırlat|haber ver|uyar)' / 'DURATION kala' => ParsedItem.leadTimesMinutes (new field); planner already supports leadTimesMinutes.",
+   "expected": {
+    "kind": "reminder",
+    "title": "ABB ile toplantı var",
+    "due": "2026-10-01T14:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "leadMinutes": [
+     30
+    ],
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xlead-002",
+   "now": "sun",
+   "input": "15 Ekim'de TIA Portal lisansı bitiyor, bir hafta önce hatırlat",
+   "tags": [
+    "lead-time",
+    "G10",
+    "deadline"
+   ],
+   "status": "proposed",
+   "gap": "License/certificate expiries are a core use case (03 §6.1 #25) but lead times are not parsed.",
+   "proposedRule": "G10",
+   "expected": {
+    "kind": "reminder",
+    "title": "TIA Portal lisansı bitiyor",
+    "due": "2026-10-15T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "leadMinutes": [
+     10080
+    ],
+    "minConfidence": 0.85
+   }
+  },
+  {
+   "id": "xtech-001",
+   "now": "sun",
+   "input": "Sürücü firmware'ini 4.20'ye güncelle",
+   "tags": [
+    "technical",
+    "G11",
+    "version-number"
+   ],
+   "status": "proposed",
+   "gap": "Dotted a.b with a DAT suffix is always a TIME (§8.6 rule 1) -> reminder today 16:20.",
+   "proposedRule": "G11: dotted number preceded (≤2 tokens) by firmware/sürüm/versiyon/v/revizyon/rev/güncelleme or followed by güncelle/yükselt is a version, not a time.",
+   "expected": {
+    "kind": "task",
+    "title": "Sürücü firmware'ini 4.20'ye güncelle",
+    "due": null,
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.75
+   }
+  },
+  {
+   "id": "xtech-002",
+   "now": "sun",
+   "input": "Teklifin son günü cuma",
+   "tags": [
+    "technical",
+    "G11",
+    "deadline-noun"
+   ],
+   "status": "proposed",
+   "gap": "'son günü' is an ordinal day-of-month (-1): resolves to 30 Sep and then conflicts with 'cuma' (first date wins = wrong).",
+   "proposedRule": "G11: 'son gün(ü) / son tarih / deadline' are day-of-month only after 'ayın' / a month name; otherwise they are title words and the explicit day wins.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Teklifin son günü",
+    "due": "2026-10-02T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   }
+  },
+  {
+   "id": "xrec-001",
+   "now": "sun",
+   "input": "her 6 ayda bir kompresör filtrelerini değiştir",
+   "tags": [
+    "recurrence",
+    "G12",
+    "maintenance"
+   ],
+   "status": "proposed",
+   "gap": "'N ayda bir' (periodic maintenance: 3/6 months) is missing from §9.1; 'N günde bir' and 'ayda bir' exist.",
+   "proposedRule": "G12: 'her N ayda bir / N ayda bir' => monthly interval N, monthDay = today; first occurrence = today + N months (a maintenance interval starts after the job just done). Weekend landing shows the 'Pazartesiye al' chip.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Kompresör filtrelerini değiştir",
+    "due": "2027-03-27T09:00",
+    "recurrence": {
+     "freq": "monthly",
+     "interval": 6,
+     "weekdays": null,
+     "monthDay": 27,
+     "month": null
+    },
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "minConfidence": 0.8
+   }
+  },
+  {
+   "id": "xrec-002",
+   "now": "sun",
+   "input": "her ayın ilk pazartesi yönetim toplantısı",
+   "tags": [
+    "recurrence",
+    "G12",
+    "nth-weekday",
+    "low"
+   ],
+   "status": "proposed",
+   "gap": "Nth-weekday-of-month cannot be represented by Recurrence; current rules may yield 'monthly day 1' (wrong: fires on the 1st) silently.",
+   "proposedRule": "G12 (v1): detect 'ayın (ilk|ikinci|üçüncü|son) WEEKDAY' => recurrence nil, due = next such day, flag unsupportedRecurrence (review). v1.1: Recurrence.weekOrdinal.",
+   "expected": {
+    "kind": "reminder",
+    "title": "Yönetim toplantısı",
+    "due": "2026-10-05T09:00",
+    "recurrence": null,
+    "priority": "normal",
+    "person": null,
+    "project": null,
+    "place": null,
+    "command": null,
+    "maxConfidence": 0.59
+   }
+  }
+ ]
+}

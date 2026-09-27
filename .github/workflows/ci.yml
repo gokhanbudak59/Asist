@@ -1,0 +1,159 @@
+name: Asist CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**/*.md"
+  workflow_dispatch:
+    inputs:
+      mod:
+        description: "ipa = IPA üret | derle = yalnız derleme kontrolü (paket yok)"
+        type: choice
+        options: [ipa, derle]
+        default: ipa
+      xcode:
+        description: "Xcode seçimi: boş = en yeni 26.x | '26.5' | tam yol"
+        type: string
+        required: false
+        default: ""
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash          # => bash --noprofile --norc -eo pipefail {0}
+
+jobs:
+  core-tests:
+    name: AsistCore testleri (Linux, Swift 6.3)
+    runs-on: ubuntu-24.04
+    container: swift:6.3-noble
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Ortam bilgisi
+        run: |
+          swift --version
+          ls /usr/share/zoneinfo/Europe/Istanbul
+      - name: swift build + swift test
+        working-directory: Packages/AsistCore
+        run: |
+          swift build --build-tests 2>&1 | tee "$RUNNER_TEMP/swift-build.log"
+          swift test --skip-build --parallel 2>&1 | tee "$RUNNER_TEMP/swift-test.log"
+      - name: Hata özeti
+        if: failure()
+        run: |
+          {
+            echo "## AsistCore hataları"
+            echo '```'
+            grep -hE "error:|failed|XCTAssert" "$RUNNER_TEMP"/swift-*.log | sort -u | head -80 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  ios:
+    name: iOS derleme + IPA (macOS 26)
+    runs-on: macos-26
+    timeout-minutes: 40
+    env:
+      XCODE_MAJOR: "26"
+      XCODEGEN_VERSION: "2.46.0"
+      XCODEGEN_SHA256: "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806"
+      MOD: ${{ inputs.mod || 'ipa' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Xcode seç
+        env:
+          XCODE_REQ: ${{ inputs.xcode }}
+        run: bash Scripts/ci/select-xcode.sh "$XCODE_REQ"
+
+      - name: XcodeGen kur (sabit sürüm + SHA256)
+        run: bash Scripts/ci/install-xcodegen.sh
+
+      - name: Xcode projesini üret
+        run: |
+          xcodegen generate --spec project.yml 2>&1 | tee "$RUNNER_TEMP/xcodegen.log"
+          if grep -q "settings found" "$RUNNER_TEMP/xcodegen.log"; then
+            echo "::error::XcodeGen SettingPresets bulunamadı; kurulum bozuk."
+            exit 1
+          fi
+          xcodebuild -list -project Asist.xcodeproj
+
+      - name: Derle (iphoneos, imzasız)
+        run: |
+          CONFIG=Release
+          if [ "$MOD" = "derle" ]; then CONFIG=Debug; fi
+          FMT="cat"
+          if command -v xcbeautify >/dev/null; then FMT="xcbeautify --renderer github-actions"; fi
+          echo "CONFIG=$CONFIG" >> "$GITHUB_ENV"
+          xcodebuild \
+            -project Asist.xcodeproj \
+            -scheme Asist \
+            -configuration "$CONFIG" \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "$RUNNER_TEMP/DD" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/xcodebuild.log" | $FMT
+
+      - name: Derleme hata özeti
+        if: failure()
+        run: bash Scripts/ci/error-summary.sh "$RUNNER_TEMP/xcodebuild.log"
+
+      - name: IPA paketle
+        if: env.MOD == 'ipa'
+        run: |
+          bash Scripts/ci/package-ipa.sh \
+            "$RUNNER_TEMP/DD/Build/Products/${CONFIG}-iphoneos/Asist.app" \
+            "$RUNNER_TEMP/out"
+
+      - name: Yükle — Asist.ipa (entitlement gömülü, ad-hoc)
+        if: env.MOD == 'ipa'
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ runner.temp }}/out/Asist.ipa
+          archive: false
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Yükle — Asist-imzasiz.ipa (yedek)
+        if: env.MOD == 'ipa'
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ runner.temp }}/out/Asist-imzasiz.ipa
+          archive: false
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Yükle — üretilen Xcode projesi
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Asist-xcodeproj
+          path: |
+            Asist.xcodeproj
+            Generated
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Yükle — derleme günlükleri
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: derleme-gunlukleri
+          path: |
+            ${{ runner.temp }}/xcodebuild.log
+            ${{ runner.temp }}/xcodegen.log
+          retention-days: 7
+          if-no-files-found: ignore

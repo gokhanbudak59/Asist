@@ -1,0 +1,16 @@
+# XcodeGen / Xcode üretimleri
+Asist.xcodeproj/
+Generated/
+DerivedData/
+build/
+xcuserdata/
+*.xcworkspace/xcuserdata/
+# SwiftPM
+Packages/AsistCore/.build/
+Packages/AsistCore/.swiftpm/
+# Çıktılar
+*.ipa
+*.xcarchive/
+# İşletim sistemi
+.DS_Store
+Thumbs.db
