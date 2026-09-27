@@ -21,6 +21,8 @@ struct SheetHost: View {
                 ProjectEditorSheet(projectID: id)
             case .followUpMessage(let id):
                 FollowUpMessageSheet(itemID: id)
+            case .editItem(let id):
+                ItemEditSheet(itemID: id)
             }
         }
         .overlay(alignment: .bottom) {

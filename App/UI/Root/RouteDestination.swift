@@ -34,6 +34,21 @@ struct RouteDestination: View {
             TriggerSettingsView()
         case .dataSettings:
             DataSettingsView()
+        // Revision 4 (07 §11.10)
+        case .weeklyReport:
+            WeeklyReportView()
+        case .people:
+            PeopleView()
+        case .person(let key):
+            PersonDetailView(personKey: key)
+        case .places:
+            PlacesView()
+        case .placeEditor(let id):
+            PlaceEditorView(placeID: id)
+        case .updates:
+            UpdateSettingsView()
+        case .calendarSettings:
+            CalendarSettingsView()
         }
     }
 }

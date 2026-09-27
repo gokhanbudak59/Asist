@@ -544,19 +544,50 @@ struct ItemDetailView: View {
                     }
             }
             .frame(minHeight: 44)
-            if let place = store.place(item.placeID) {
-                HStack(spacing: 12) {
-                    Image(systemName: Symbol.place)
-                        .foregroundStyle(Color.secondary)
-                        .frame(width: 24)
-                    Text("Yer")
-                    Spacer(minLength: 8)
-                    Text(place.name)
-                        .foregroundStyle(Color.secondary)
-                }
-                .frame(minHeight: 44)
+            if item.kind != .note || item.placeID != nil {
+                placeMenu(item)
             }
         }
+    }
+
+    /// 07 §9.1 / §9.10: "Yok", "<Ad> · varınca", "<Ad> · çıkınca" for every configured place, then "Konumları
+    /// düzenle…" (or "Önce bir konum kaydet…" when none is configured) → Ayarlar › Konumlar.
+    private func placeMenu(_ item: Item) -> some View {
+        let configured = store.places.filter { (place: Place) -> Bool in LocationPlanner.isConfigured(place) }
+        let currentTrigger: PlaceTrigger = item.placeTrigger ?? .onArrive
+        let editTitle: String = configured.isEmpty ? "Önce bir konum kaydet…" : "Konumları düzenle…"
+        return Menu {
+            Button {
+                setPlace(nil, nil)
+            } label: {
+                choiceLabel("Yok", selected: item.placeID == nil)
+            }
+            ForEach(configured) { place in
+                Button {
+                    setPlace(place.id, .onArrive)
+                } label: {
+                    choiceLabel(LocationPlanner.placeLabel(name: place.name, trigger: .onArrive),
+                                selected: item.placeID == place.id && currentTrigger == .onArrive)
+                }
+                Button {
+                    setPlace(place.id, .onLeave)
+                } label: {
+                    choiceLabel(LocationPlanner.placeLabel(name: place.name, trigger: .onLeave),
+                                selected: item.placeID == place.id && currentTrigger == .onLeave)
+                }
+            }
+            Divider()
+            Button {
+                commitAll()
+                focusedField = nil
+                router.openRoute(.places, in: .settings)
+            } label: {
+                Label(editTitle, systemImage: "location.circle")
+            }
+        } label: {
+            valueRow("Yer", value: placeValue(item), systemImage: Symbol.place)
+        }
+        .disabled(item.kind == .note || !item.isOpen)
     }
 
     private static let priorityChoices: [Priority] = [.critical, .high, .normal, .low]
@@ -713,7 +744,13 @@ struct ItemDetailView: View {
     // MARK: - Texts
 
     private func dueTitle(_ item: Item) -> String {
-        guard let due = item.dueDate else { return "Zamanı belirsiz" }
+        guard let due = item.dueDate else {
+            // 07 §9.10: a place-only item is announced by its geofence (same wording as ItemRowText).
+            if item.placeID != nil {
+                return item.placeTrigger == .onLeave ? "Konumdan çıkınca" : "Konuma varınca"
+            }
+            return "Zamanı belirsiz"
+        }
         let calendar = AppTime.calendar
         let day = TurkishDateFormatter.datePhrase(due, now: now, calendar: calendar)
         if item.hasTime {
@@ -731,6 +768,19 @@ struct ItemDetailView: View {
         guard let completed = item.completedAt else { return "Tamamlandı" }
         return "Tamamlandı · " + TurkishDateFormatter.shortDateTime(completed, now: now, calendar: AppTime.calendar,
                                                                    includeTime: true)
+    }
+
+    /// "Fabrika · varınca" (+ " · konum kayıtlı değil" for an empty slot), "Yok" without a place.
+    private func placeValue(_ item: Item) -> String {
+        guard let place = store.place(item.placeID) else { return "Yok" }
+        let label = LocationPlanner.placeLabel(name: place.name, trigger: item.placeTrigger ?? .onArrive)
+        if !LocationPlanner.isConfigured(place) {
+            return label + " · konum kayıtlı değil"
+        }
+        if item.locationFiredAt != nil && item.dueDate == nil && item.isOpen {
+            return label + " · bildirildi"
+        }
+        return label
     }
 
     private func recurrenceValue(_ item: Item) -> String {
@@ -952,6 +1002,20 @@ struct ItemDetailView: View {
                 edited.isEvent = false
             }
         }
+    }
+
+    /// 07 §9.10: a new place (or trigger) re-arms the geofence — locationFiredAt is cleared and an old delivered
+    /// location notification is removed so the next sync does not record it again.
+    private func setPlace(_ id: UUID?, _ trigger: PlaceTrigger?) {
+        guard let item = currentEditableItem() else { return }
+        let newTrigger: PlaceTrigger? = id == nil ? nil : (trigger ?? .onArrive)
+        guard item.placeID != id || item.placeTrigger != newTrigger else { return }
+        applyEdit("yer", event: .edited) { edited in
+            edited.placeID = id
+            edited.placeTrigger = newTrigger
+            edited.locationFiredAt = nil
+        }
+        LocationService.shared.forgetDelivered(itemID: itemID)
     }
 
     private func setPriority(_ priority: Priority) {

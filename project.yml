@@ -1,6 +1,6 @@
 # Asist — XcodeGen spec (single source of truth). CI: `xcodegen generate --spec project.yml`.
 # Asist.xcodeproj and Generated/ are regenerated on every run and are NOT committed.
-# v1.0 "Çekirdek": one application target, no extensions, no entitlements (04 §7.3).
+# Revision 4 (07): app + AsistWidgets extension (iOS 18.0), Shared/ in both, App Group entitlement on both.
 name: Asist
 
 options:
@@ -19,7 +19,7 @@ settings:
     SWIFT_STRICT_CONCURRENCY: minimal
     TARGETED_DEVICE_FAMILY: "1"
     IPHONEOS_DEPLOYMENT_TARGET: "17.0"
-    MARKETING_VERSION: "1.0.0"
+    MARKETING_VERSION: "1.1.0"
     CURRENT_PROJECT_VERSION: "1"
     GENERATE_INFOPLIST_FILE: NO
     SUPPORTS_MACCATALYST: NO
@@ -39,6 +39,7 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: App
+      - path: Shared
     settings:
       base:
         PRODUCT_NAME: Asist
@@ -75,8 +76,48 @@ targets:
         LSApplicationQueriesSchemes: [shortcuts]
         NSMicrophoneUsageDescription: "Asist, sesli komutlarını dinleyip hatırlatma, görev ve nota dönüştürmek için mikrofonu kullanır. Ses kaydı saklanmaz."
         NSSpeechRecognitionUsageDescription: "Asist, söylediklerini yazıya çevirmek için konuşma tanımayı kullanır."
+        NSLocationWhenInUseUsageDescription: "Asist, “fabrikaya varınca hatırlat” gibi konuma bağlı hatırlatmalar ve yer kaydetmek için konumunu kullanır."
+        NSCalendarsFullAccessUsageDescription: "Asist, bugünkü toplantılarını Bugün ekranında göstermek ve istersen öncesinde hatırlatmak için takvimini okur. Takvimine hiçbir şey yazmaz."
+    entitlements:
+      path: Generated/Asist.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.gokhanbudak.asist
     dependencies:
       - package: AsistCore
+      - target: AsistWidgets
+        embed: true
     scheme:
       language: tr
       region: TR
+
+  AsistWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "18.0"
+    sources:
+      - path: Widgets
+      - path: Shared
+    settings:
+      base:
+        PRODUCT_NAME: AsistWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.gokhanbudak.asist.widgets
+        IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+        SKIP_INSTALL: YES
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) ASIST_WIDGET"
+    info:
+      path: Generated/AsistWidgets-Info.plist
+      properties:
+        CFBundleDisplayName: Asist
+        CFBundleDevelopmentRegion: tr
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Generated/AsistWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.gokhanbudak.asist
+    dependencies:
+      - package: AsistCore

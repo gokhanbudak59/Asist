@@ -134,6 +134,10 @@ final class ReminderEngine {
             return
         }
 
+        // 07 §9.6: geofence requests first (records delivered ones, ≤ 10 slots), then plan with the remaining budget.
+        _ = await LocationService.shared.sync(store: store)
+        guard store.isLoaded else { return }
+
         // 3: plan. Pending one-shot dates let the planner keep nags the rate limiter already shifted.
         let pendingDates = await scheduler.pendingOneShotDates()
         guard store.isLoaded else { return }
@@ -286,6 +290,12 @@ final class ReminderEngine {
         let itemText = event.itemID?.uuidString ?? "-"
         let kindText = event.kind.isEmpty ? "-" : event.kind
         let settings = store.settings
+
+        // 07 §9.6: any response to a geofence notification (tap, dismiss, action) proves its delivery — the item
+        // nags from here on (anchor = locationFiredAt) unless the action below completes or snoozes it.
+        if event.notificationID.hasPrefix(NotificationID.locationPrefix), let id = event.itemID {
+            store.recordLocationFired(id, at: event.deliveredAt)
+        }
 
         // DEVIATION(04 §6.3): an action from a notification of a recurring occurrence that the user has already
         // completed (e.g. in the app, after this nag was delivered) must not complete / snooze the *next*
@@ -487,7 +497,7 @@ final class ReminderEngine {
     func makeInput(now: Date, allowTimeSensitive: Bool) -> PlanInput {
         PlanInput(items: store.items, projects: store.projects, places: store.places, settings: store.settings,
                   now: now, calendar: AppTime.calendar, signingExpiry: signing.expiryDate,
-                  locationSlotsUsed: 0, allowTimeSensitive: allowTimeSensitive)
+                  locationSlotsUsed: LocationService.shared.activeCount, allowTimeSensitive: allowTimeSensitive)
     }
 
     /// "Test bildirimi (10 sn)": asist.x.test, category ASIST_ITEM, itemID nil.

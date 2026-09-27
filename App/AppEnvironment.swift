@@ -57,6 +57,9 @@ final class AppEnvironment {
         observe(.NSSystemTimeZoneDidChange, reason: "timeZone")
         observe(UIApplication.protectedDataDidBecomeAvailableNotification, reason: "protectedData")
         engine.requestReconcile(reason: "launch")
+        // Revision 4 (07 §9.5, §10.3): read authorization states only — never prompts.
+        LocationService.shared.start()
+        CalendarService.shared.start()
     }
 
     private func observe(_ name: Notification.Name, reason: String) {
@@ -84,6 +87,7 @@ final class AppEnvironment {
             capture.invalidateParser()                       // projects/aliases and frequent people feed the parser
         }
         engine.requestReconcile(reason: "data." + change.rawValue)
+        WidgetSnapshotWriter.shared.refresh(store: store, now: Date())   // 07 R4-D5 (no-op without App Group)
     }
 
     func sceneDidBecomeActive() async {
@@ -95,6 +99,9 @@ final class AppEnvironment {
         } else {
             await engine.reconcile(reason: "active")
         }
+        WidgetSnapshotWriter.shared.refresh(store: store, now: Date())
+        CalendarService.shared.refresh(now: Date())
+        UpdateChecker.shared.checkIfDue(store: store, now: Date())
         // 05a #26: onboarding only when the data file was really read (a locked-at-boot launch has defaults).
         if store.isLoaded && !store.settings.onboardingCompleted && !router.showOnboarding {
             router.showOnboarding = true
@@ -116,6 +123,7 @@ final class AppEnvironment {
         BackgroundRefresh.schedule()
         Task { @MainActor in
             await AppEnvironment.shared.engine.reconcile(reason: "background")
+            WidgetSnapshotWriter.shared.refresh(store: AppEnvironment.shared.store, now: Date())
             AppEnvironment.shared.endFlush()
         }
     }

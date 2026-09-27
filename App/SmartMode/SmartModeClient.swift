@@ -107,6 +107,8 @@ final class SmartModeClient: @unchecked Sendable {
     static let maxDraftNotesCharacters = 4000
     static let maxSummaryNotes = 60
     static let maxSummaryCharacters = 60_000
+    /// F4 (07 §7.5): the weekly report text is cut to this many characters before sending.
+    static let maxReportCharacters = 20_000
 
     private let keychain: KeychainStore
 
@@ -208,6 +210,34 @@ final class SmartModeClient: @unchecked Sendable {
         case .success(let json):
             guard let draft = SmartResponseReader.decode(SmartDraftResponse.self, fromJSONText: json) else {
                 AsistLog.error("Akıllı Mod taslak: JSON şemaya uymadı", .smart)
+                return .failure(.decoding)
+            }
+            let message = draft.message.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !message.isEmpty else { return .failure(.decoding) }
+            return .success(message)
+        }
+    }
+
+    // MARK: - Weekly report polish (F4)
+
+    /// F4 (07 §7.5): 60 s, effort "medium", max_tokens 8000, schema SmartModeSchemas.draft; text cut to 20 000
+    /// characters (TurkishText.truncated). Sends only the report text and the user's "Hitap" name.
+    func polishReport(_ report: String, settings: AppSettings) async -> Result<String, SmartModeError> {
+        guard settings.smartModeEnabled else { return .failure(.disabled) }
+        let text = TurkishText.truncated(report.trimmingCharacters(in: .whitespacesAndNewlines),
+                                         max: SmartModeClient.maxReportCharacters)
+        guard !text.isEmpty else { return .failure(.rejectedByValidator) }
+        let user = SmartModePrompts.reportPolishUserMessage(report: text, userName: settings.userName)
+        let outcome = await send(model: settings.smartModeModel, system: SmartModePrompts.reportPolishSystem,
+                                 user: user, schema: SmartModeSchemas.draft, effort: "medium",
+                                 maxTokens: SmartModeClient.longMaxTokens, timeout: SmartModeClient.longTimeout,
+                                 purpose: "rapor")
+        switch outcome {
+        case .failure(let error):
+            return .failure(error)
+        case .success(let json):
+            guard let draft = SmartResponseReader.decode(SmartDraftResponse.self, fromJSONText: json) else {
+                AsistLog.error("Akıllı Mod rapor: JSON şemaya uymadı", .smart)
                 return .failure(.decoding)
             }
             let message = draft.message.trimmingCharacters(in: .whitespacesAndNewlines)

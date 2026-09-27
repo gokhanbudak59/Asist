@@ -15,12 +15,33 @@ Kurulum ve haftalık yenileme için: **KURULUM.md**.
 | **Siri: "Asist'e kaydet"** | Evet, Asist açılmaz | **Evet** | Siri "Ne kaydedeyim?" der, cümleni söylersin. |
 | **Arkaya Dokunma → "Asist Dinle"** | Asist açılıp dinler | Face ID sonrası | Üç kez vur (kurduysan). |
 | **Siri: "Asist dinle"** | Asist açılıp dinler | Face ID sonrası | |
+| **Kilit ekranı düğmesi "Asist Dinle"** (iOS 18) | Asist açılıp dinler | Face ID sonrası | Kilit ekranının altındaki düğme; kurulumu KURULUM §10. |
+| **Denetim Merkezi: "Asist Dinle" / "Asist Yaz"** | Evet | Face ID sonrası | Sağ üstten aşağı kaydır. |
+| **Ana ekran widget'ı "Asist"** | Evet | — | Küçük: dokun, dinlesin. Orta: **Dinle**, **Yaz** ve sıradaki üç iş. |
 | Uygulamadaki **mikrofon** | — | — | Bugün ekranının altındaki büyük düğme. |
 | **Ses kısma tuşuna iki kez bas** | Hayır | Hayır | Yalnız Asist ekrandayken; 1 saniye içinde iki kez. |
 | **Yaz** | — | — | Klavyeyle; yazarken ne anladığımı canlı gösteririm. |
 
-iOS, uygulamaların ses tuşlarını arka planda veya kilit ekranında dinlemesine izin vermez. Bu yüzden ses kısma
-tuşu yalnız Asist açıkken çalışır. Uygulama kapalıyken en hızlı yollar Arkaya Dokunma ve Siri'dir.
+iOS, uygulamaların ses tuşlarını arka planda veya kilit ekranında dinlemesine izin vermez; bu yüzden ses kısma tuşu
+yalnız Asist açıkken çalışır. Uygulama kapalıyken en hızlı yollar **kilit ekranı düğmesi**, Arkaya Dokunma ve Siri'dir.
+
+### Kilit ekranı düğmesi, Denetim Merkezi ve widget'lar (iOS 18)
+
+Bir kez yapılır (~1 dakika). Uygulamada da adım adım var: **Ayarlar › Tetikleyiciler › Kilit ekranı ve widget'lar**.
+
+- **Kilit ekranına "Asist Dinle":** Kilit ekranında ekrana basılı tut → **Özelleştir** → **Kilit Ekranı** → alttaki
+  fener ya da kamera düğmesinin **−** işaretine dokun → boş yerdeki **+** → **Asist** → **Asist Dinle** → **Bitti**.
+  Artık kilit ekranından tek dokunuşla Asist açılır ve dinler (önce Face ID ister).
+- **Denetim Merkezi:** sağ üst köşeden aşağı kaydır → sol üstte **+** → **Denetim Ekle** → **Asist** →
+  **Asist Dinle** ya da **Asist Yaz**.
+- **Ana ekran widget'ı:** boş bir yere basılı tut → **Düzenle** → **Widget Ekle** → **Asist** → Küçük ya da Orta.
+  Geciken, bugün ve takip sayılarını gösterir; bir kayıt değişince birkaç saniye içinde güncellenir.
+- **Kilit ekranı widget'ları:** Özelleştir → Kilit Ekranı → saatin altındaki alan → **Asist Dinle** (yuvarlak) ya da
+  **Sıradaki iş**. Ayarlar › Hatırlatma ısrarı › "Kilit ekranında konuyu göster" kapalıysa telefon kilitliyken iş
+  başlığı gizlenir.
+
+Widget'lar yalnız "Dinle" gösteriyorsa Asist'i bir kez aç. Ayarlar › İmza ve izinler › **Widget veri paylaşımı**
+"Kapalı" ise ücretsiz imza veri paylaşımını vermemiştir: widget'lar yalnız Asist'i açar, düğmeler yine çalışır.
 
 ### Arkaya Dokunma kurulumu ("Asist Hızlı Kayıt")
 
@@ -212,16 +233,62 @@ imza bitiyor, mikrofon kapalı, "Kalıcı" banner ipucu gibi. Bantaki düğme do
 - **Bugün:** GECİKENLER (en üstte; en önemlisi "Şimdi ilgilen" kartında) · EMİN OLAMADIKLARIM · BUGÜN · TAKİP ·
   YAKLAŞAN · ZAMANI BELİRSİZ. Altta **Yaz · Mikrofon · Oku**.
 - **Listeler:** Hatırlatmalar, Görevler, Notlar, Takip, Tamamlananlar; arama ve sıralama. Sağa kaydır: **Yaptım**;
-  sola kaydır: **Ertele**, **Sil** (Geri Al ile).
+  sola kaydır: **Sil**, **Ertele**, **Düzenle** (Geri Al ile).
 - **Projeler:** projeye göre işler ve notlar; **Bu projeye sesli not**. Proje adlarına takma ad ekleyebilirsin
   ("Kocaeli hattı" = "KCL").
 - **Kayıt detayı:** zaman, tekrar, ön uyarı (Yok, 10 dk … 30 gün), ısrar düzeyi, kişi/firma, notlar, kontrol listesi
   şablonları (FAT, SAT, Devreye alma, Saha ziyareti, Toplantı hazırlığı), orijinal cümle ve geçmiş.
   Takip kayıtlarında **Mesaj gönder** hazır bir hatırlatma mesajı açar (WhatsApp, e-posta, SMS).
+- **Düzenle:** bir kaydı sola kaydır → **Düzenle**; kayıt kartındaki seçimleri (gün, saat, öncelik, tür, proje,
+  tekrar, kişi, ön uyarı) değiştir → **Kaydet**. Sağa kaydır → **Yaptım**. "Şimdi ilgilen" kartında da **Düzenle**
+  düğmesi var. Kaydettikten sonra çıkan **Geri Al** eski hâline döndürür; **Tüm ayrıntılar** kontrol listesi, notlar
+  ve geçmiş için kayıt detayını açar.
+- **Haftalık rapor:** Projeler'in sol üstündeki belge simgesi veya Bugün › **⋯** → **Haftalık rapor**. Bu hafta /
+  geçen hafta, proje proje: tamamlananlar, gecikenler, açık işler, gelecek hafta ve beklenenler (kişiye göre).
+  **Paylaş** ile e-posta/WhatsApp, **Kopyala** ile panoya. Akıllı Mod açıksa metni daha düzgün bir rapora çevirebilir.
+- **Kişiler:** Listeler'in sol üstündeki kişi simgesi veya Bugün › **⋯** → **Kişiler**. Kişi / Firma alanı dolu
+  kayıtlardan toplanır: o kişiden beklediğin işler, açık işler ve son 60 günde bitenler. Satırdaki **kâğıt uçak**
+  simgesi, o kişiden beklediğin bütün konuları **tek bir mesajla** sorar. Kişi ekranındaki **Yeniden sor: Yarın ·
+  2 gün sonra · Pazartesi**, o kişideki bütün takipleri birlikte erteler.
+- **Takvim:** Bugün'de **TAKVİM** bölümü bugünkü toplantılarını gösterir; **15 dk önce** ile toplantıdan önce
+  hatırlatma kurulur (süre Ayarlar › Takvim'den: 5, 10, 15, 30, 60 dk). Asist takvimini yalnız okur, takvimine
+  hiçbir şey yazmaz. İlk seferde Bugün'deki **"Toplantıların Bugün'de görünsün"** kartından **Takvime eriş** ile
+  izin ver.
 
 ---
 
-## 5. Veriler ve yedekler
+## 5. Konuma bağlı hatırlatmalar
+
+1. Ayarlar › **Konumlar** → **Fabrika**, **Ofis** ya da **Ev** (veya **Yer ekle**).
+2. O yerdeyken **Şu anki konumu kaydet**'e dokun. İlk seferde konum izni sorulur: **Uygulamayı Kullanırken İzin Ver**.
+3. Sonra konuşarak kur:
+   - "Fabrikaya varınca pano kontrolünü hatırlat"
+   - "Ofisten çıkınca Ahmet'i ara"
+   - "Eve varınca faturayı öde"
+
+Bilmen gerekenler:
+
+- **Kesin Konum** açık olmalı (Ayarlar › Asist › Konum). Kapalıysa Bugün ekranında bant çıkar.
+- Aynı anda en fazla **10** yer hatırlatması izlenir (en önemlileri ve en eskileri önce).
+- O yerdeyken kurduğun "varınca" hatırlatması **bir sonraki varışta** çalar.
+- Bildirim geldikten sonra "✓ Yaptım" demezsen Asist normal ısrarla hatırlatmaya devam eder.
+- Kaydın detayında **Yer** menüsünden yer ve "varınca / çıkınca" değiştirilir. Konumun yalnız bu iPhone'da kalır.
+
+---
+
+## 6. Güncelleme
+
+**Güncellemeler telefona kendiliğinden gelir mi?** Hayır. Yan yüklenen uygulamalar kendiliğinden güncellenmez;
+Sideloadly'nin otomatik yenilemesi de yalnız imzayı tazeler, yeni sürümü indirmez. Yeni sürüm çıkınca Asist bunu
+kendisi söyler: Bugün ekranında mavi **"Yeni sürüm hazır (#N)"** bandı ve Ayarlar › **Güncelleme**. Kurmak için:
+yeni Asist.ipa'yı indir → Sideloadly → aynı Apple ID → Start → Asist'i bir kez aç. Asist'i silme; kayıtların korunur.
+
+Asist en fazla 12 saatte bir GitHub'daki sürüm dosyasına bakar; hiçbir kişisel bilgi göndermez. İstersen Ayarlar ›
+Güncelleme'den kapatabilir ya da **Şimdi kontrol et** diyebilirsin.
+
+---
+
+## 7. Veriler ve yedekler
 
 - Kayıtların **yalnızca bu telefonda** saklanır; her değişiklik anında diske yazılır. Uygulamayı kapatmak veya
   telefonu yeniden başlatmak hiçbir şey silmez.
@@ -243,7 +310,7 @@ imza bitiyor, mikrofon kapalı, "Kalıcı" banner ipucu gibi. Bantaki düğme do
 
 ---
 
-## 6. Ayarlar özeti
+## 8. Ayarlar özeti
 
 | Bölüm | İçerik |
 |---|---|
@@ -251,10 +318,13 @@ imza bitiyor, mikrofon kapalı, "Kalıcı" banner ipucu gibi. Bantaki düğme do
 | Zamanlar | İş günleri, mesai, tatil günü sabahı, sessiz saatler, günün bölümleri, takip saatleri, toplantı ön uyarısı |
 | Hatırlatma ısrarı | Önceliğe göre ısrar düzeyi ve önizleme, kritikte sessiz saat, rozet, kilit ekranında konu |
 | Özetler | Sabah brifingi, gün sonu, haftalık yedek hatırlatması |
-| Tetikleyiciler | Ses kısma tuşu, sessizlik süresi, cihaz içi tanıma, kurulum rehberleri |
+| Tetikleyiciler | Kilit ekranı düğmesi ve widget rehberi, ses kısma tuşu, sessizlik süresi, cihaz içi tanıma, kurulum rehberleri |
 | Veriler | Dışa/içe aktar, günlük yedekler, son silinenler |
-| İmza ve izinler | İmza bitişi, bildirim/mikrofon izinleri, Banner Stili, veri dosyası durumu |
+| İmza ve izinler | İmza bitişi, bildirim/mikrofon izinleri, Banner Stili, veri dosyası durumu, widget veri paylaşımı |
 | Akıllı Mod | Claude API anahtarı, model seçimi, "Emin olamadığımda Akıllı Mod'a sor", Bağlantıyı dene |
+| Konumlar | Fabrika / Ofis / Ev ve eklediğin yerler, **Şu anki konumu kaydet**, yarıçap, konum izni |
+| Takvim | Takvim erişimi, "Bugün ekranında göster", "Öncesinde hatırlat" süresi |
+| Güncelleme | Kurulu ve yayımlanan sürüm, **Şimdi kontrol et**, otomatik kontrol, kurulum adımları |
 | Tanılama | Son planlama, bekleyen bildirimler (n/64), günlük, **Test bildirimi (10 sn)**, **Planı yeniden kur** |
 
 **Sesli onaylar** yalnızca kulaklık, Bluetooth veya araç bağlıyken söylenir (toplantıda hoparlörden konuşmam);
@@ -263,7 +333,7 @@ okurum.
 
 ---
 
-## 7. Akıllı Mod (isteğe bağlı, Claude)
+## 9. Akıllı Mod (isteğe bağlı, Claude)
 
 Asist söylediklerini **telefonun içinde** anlar; internet gerekmez. Çok serbest ya da karışık bir cümlede emin
 olamazsa ve sen istersen **Akıllı Mod** devreye girer:
@@ -283,7 +353,7 @@ hiçbir şey telefondan çıkmaz. İnternet yoksa Asist sessizce telefondaki yor
 
 ---
 
-## 8. Bilmende fayda var
+## 10. Bilmende fayda var
 
 - iOS bir uygulama için en fazla **64** bekleyen bildirim tutar. Asist en yakın ve en önemli olanları planlar;
   sığmayanlar için "planı tazelemek için Asist'i aç" bildirimi gönderir. Asist'i günde bir kez açman her şeyi tazeler.

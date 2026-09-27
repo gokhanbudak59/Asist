@@ -192,6 +192,32 @@ final class PermissionCenter {
                                     action: .openAppSettings, dismissible: false, hideHours: 24))
         }
 
+        // 6b. Location (07 §9.9): only when configured-place items still waiting for their geofence exist.
+        let places = store.places
+        let placeItemCount = store.items.filter { (item: Item) -> Bool in
+            guard item.isNotifiable, item.placeTrigger != nil, item.locationFiredAt == nil,
+                  let placeID = item.placeID else { return false }
+            return places.contains { (place: Place) -> Bool in
+                place.id == placeID && LocationPlanner.isConfigured(place)
+            }
+        }.count
+        if placeItemCount > 0 {
+            switch LocationService.shared.access {
+            case .denied, .restricted, .notDetermined:
+                result.append(AppBanner(id: "location_off",
+                                        text: "Konum izni kapalı — yere bağlı \(placeItemCount) hatırlatma çalışmıyor.",
+                                        severity: .yellow, actionTitle: "Ayarları Aç",
+                                        action: .openAppSettings, dismissible: true, hideHours: 24))
+            case .reducedAccuracy:
+                result.append(AppBanner(id: "location_reduced",
+                                        text: "Kesin Konum kapalı — yere bağlı hatırlatmalar çalışmıyor.",
+                                        severity: .yellow, actionTitle: "Ayarları Aç",
+                                        action: .openAppSettings, dismissible: true, hideHours: 24))
+            case .usable:
+                break
+            }
+        }
+
         // 7. Quiet delivery / scheduled summary / previews hidden.
         if notification == .authorized {
             if quietDelivery {

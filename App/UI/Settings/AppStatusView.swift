@@ -1,5 +1,5 @@
 // WP11 — Uygulama durumu: imza bitişi (D17, 05a #28), bildirim/ses izinleri (03 §9), "Banner Stili: Kalıcı"
-// (05b A9), veri dosyası ve yazan derleme (D35). 04 §5.2.
+// (05b A9), veri dosyası ve yazan derleme (D35). 04 §5.2. Revision 4: widget veri paylaşımı (07 §5.10).
 import SwiftUI
 import AsistCore
 
@@ -19,6 +19,7 @@ struct AppStatusView: View {
             signingSection(now: now, calendar: calendar)
             notificationSection
             voiceSection
+            widgetSection(calendar: calendar)
             dataSection(calendar: calendar)
             Section {
                 LabeledContent("Sürüm", value: SettingsFormat.appVersion)
@@ -233,6 +234,32 @@ struct AppStatusView: View {
             _ = await permissions.requestVoice()
             await permissions.refresh()
             busy = false
+        }
+    }
+
+    // MARK: Widgets (revision 4, 07 §5.10)
+
+    @ViewBuilder
+    private func widgetSection(calendar: Calendar) -> some View {
+        let writer = WidgetSnapshotWriter.shared
+        let available = writer.isAvailable
+        let sharingValue: String = available ? "Açık" : "Kapalı"
+        let lastWrite: String = writer.lastWriteAt.map { SettingsFormat.shortStamp($0, calendar: calendar) } ?? "—"
+        Section {
+            HStack {
+                Text("Widget veri paylaşımı")
+                Spacer()
+                Text(sharingValue)
+                    .foregroundStyle(available ? Color.asistDone : Color.orange)
+            }
+            LabeledContent("Son güncelleme", value: available ? lastWrite : "—")
+            NavigationLink(destination: WidgetGuideView()) {
+                Label("Kilit ekranı ve widget'lar", systemImage: "lock.iphone")
+            }
+        } header: {
+            Text("Widget'lar")
+        } footer: {
+            Text(WidgetGuideView.statusText(available: available) + "\n" + WidgetGuideView.volumeKeyNote)
         }
     }
 

@@ -195,6 +195,14 @@ struct ProjectDetailView: View {
                         } label: {
                             Label("Sil", systemImage: "trash")
                         }
+                        if item.isOpen {
+                            Button {
+                                router.present(.editItem(item.id))
+                            } label: {
+                                Label("Düzenle", systemImage: "pencil")
+                            }
+                            .tint(Color.asistAccent)
+                        }
                     }
                 }
             } header: {

@@ -38,6 +38,14 @@ enum Route: Hashable {
     case summarySettings
     case triggerSettings
     case dataSettings
+    // Revision 4 (07)
+    case weeklyReport
+    case people
+    case person(String)          // PersonSummary.key
+    case places
+    case placeEditor(UUID)
+    case updates
+    case calendarSettings
 }
 
 struct ListenRequest: Equatable {
@@ -72,6 +80,8 @@ enum PendingAction: Equatable {
     case settingsTriggers
     case dataSettings
     case showTab(AppTab)
+    case openScreen(DeepLinkScreen)
+    case editItem(UUID)
 }
 
 enum SheetRoute: Identifiable {
@@ -82,6 +92,7 @@ enum SheetRoute: Identifiable {
     case datePicker(DatePickerRequest)
     case projectEditor(UUID?)
     case followUpMessage(UUID)
+    case editItem(UUID)
 
     var id: String {
         switch self {
@@ -92,6 +103,7 @@ enum SheetRoute: Identifiable {
         case .datePicker(let request): return "date-" + request.itemID.uuidString
         case .projectEditor(let id): return "project-" + (id?.uuidString ?? "new")
         case .followUpMessage(let id): return "fu-" + id.uuidString
+        case .editItem(let id): return "edit-" + id.uuidString
         }
     }
 }
@@ -136,6 +148,8 @@ final class AppRouter {
         case .readAgenda: request(.readAgenda)
         case .settingsTriggers: request(.settingsTriggers)
         case .tab(let tab): request(.showTab(AppTab(deepLink: tab)))
+        case .editItem(let id): request(.editItem(id))
+        case .screen(let screen): request(.openScreen(screen))
         }
     }
 
@@ -169,6 +183,27 @@ final class AppRouter {
         case .lists: listsPath = []
         case .projects: projectsPath = []
         case .settings: settingsPath = []
+        }
+    }
+
+    /// Pushes `route` on the selected tab's stack (menus/toolbars where a NavigationLink cannot be used).
+    func push(_ route: Route) {
+        switch selectedTab {
+        case .today: todayPath.append(route)
+        case .lists: listsPath.append(route)
+        case .projects: projectsPath.append(route)
+        case .settings: settingsPath.append(route)
+        }
+    }
+
+    /// `asist://ekran/<kod>` (07 R4-D9).
+    func openScreen(_ screen: DeepLinkScreen) {
+        switch screen {
+        case .weeklyReport: openRoute(.weeklyReport, in: .today)
+        case .people: openRoute(.people, in: .lists)
+        case .places: openRoute(.places, in: .settings)
+        case .updates: openRoute(.updates, in: .settings)
+        case .calendar: openRoute(.calendarSettings, in: .settings)
         }
     }
 

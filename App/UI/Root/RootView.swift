@@ -123,6 +123,10 @@ struct RootView: View {
             router.openRoute(.dataSettings, in: .settings)
         case .showTab(let tab):
             router.showTab(tab)
+        case .openScreen(let screen):
+            router.openScreen(screen)
+        case .editItem(let id):
+            router.present(.editItem(id))
         }
     }
 }

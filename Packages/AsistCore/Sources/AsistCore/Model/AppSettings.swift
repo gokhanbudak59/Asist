@@ -69,6 +69,14 @@ public struct AppSettings: Codable, Equatable, Hashable {
     public var onboardingCompleted: Bool = false
     /// D32 "Sessize al": nags before this instant collapse to it; first alerts before it are silent.
     public var muteUntil: Date? = nil
+    // Revision 4 (07)
+    /// F3: check GitHub `surum.json` at most every 12 h while the app is active (no user data is sent).
+    public var updateCheckEnabled: Bool = true
+    /// F7: show the "TAKVİM" section on Bugün when calendar access is granted.
+    public var calendarOnToday: Bool = true
+    /// F7: "Öncesinde hatırlat" lead in minutes; allowed: calendarLeadChoices.
+    public var calendarLeadMinutes: Int = 15
+    public static let calendarLeadChoices: [Int] = [5, 10, 15, 30, 60]
 
     public init() {}
 
@@ -105,6 +113,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
         case volumeTriggerEnabled, restoreVolumeAfterTrigger, silenceSeconds, onDeviceRecognitionOnly
         case smartModeEnabled, smartModeModel, smartModeAutoOnLowConfidence
         case activeProjectID, onboardingCompleted, muteUntil
+        case updateCheckEnabled, calendarOnToday, calendarLeadMinutes
     }
 
     public init(from decoder: Decoder) throws {
@@ -168,6 +177,10 @@ public struct AppSettings: Codable, Equatable, Hashable {
         activeProjectID = c.lenientOptional(UUID.self, forKey: .activeProjectID)
         onboardingCompleted = c.lenient(Bool.self, forKey: .onboardingCompleted, default: onboardingCompleted)
         muteUntil = c.lenientOptional(Date.self, forKey: .muteUntil)
+        updateCheckEnabled = c.lenient(Bool.self, forKey: .updateCheckEnabled, default: updateCheckEnabled)
+        calendarOnToday = c.lenient(Bool.self, forKey: .calendarOnToday, default: calendarOnToday)
+        let rawLead = c.lenient(Int.self, forKey: .calendarLeadMinutes, default: calendarLeadMinutes)
+        calendarLeadMinutes = AppSettings.calendarLeadChoices.contains(rawLead) ? rawLead : 15
     }
 
     private static func selectable(_ kind: NagProfileKind, fallback: NagProfileKind) -> NagProfileKind {

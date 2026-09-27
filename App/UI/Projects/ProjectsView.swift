@@ -63,6 +63,15 @@ struct ProjectsView: View {
         }
         .navigationTitle("Projeler")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    router.push(.weeklyReport)
+                } label: {
+                    Image(systemName: "doc.text")
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .accessibilityLabel("Haftalık rapor")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     router.present(.projectEditor(nil))

@@ -66,6 +66,11 @@ struct ItemRow: View {
             .accessibilityAction(named: Text("Sil")) {
                 ItemQuickActions.delete(item.id, store: store, toasts: toasts)
             }
+            .accessibilityAction(named: Text("Düzenle")) {
+                if item.isOpen {
+                    router.present(.editItem(item.id))
+                }
+            }
             if showsCompletion {
                 completionButton
             }
@@ -188,6 +193,9 @@ enum ItemRowText {
             return TurkishDateFormatter.shortDateTime(item.createdAt, now: now, calendar: calendar, includeTime: true)
         }
         guard let anchor = item.anchorDate else {
+            if item.placeID != nil {
+                return item.placeTrigger == .onLeave ? "Konumdan çıkınca" : "Konuma varınca"
+            }
             return "Zamanı belirsiz"
         }
         let showsClock = item.hasTime || item.snoozedUntil != nil || item.kind == .reminder

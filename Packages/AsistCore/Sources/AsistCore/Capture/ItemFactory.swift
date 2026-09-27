@@ -187,22 +187,34 @@ public enum ItemFactory {
                         createdAt: now,
                         history: [HistoryEntry(date: now, event: .created)])
 
-        // R3 place → notes line (no geofences in v1.0).
+        // R3 place (07 §9.4): a configured Place (LocationPlanner.isConfigured) with a matching name/alias
+        // (TurkishText.searchKey equality) → placeID/placeTrigger, no notes line, and no time defaults below when the
+        // item has no date. Unknown or unconfigured place → v1.0 notes line.
+        var placeResolved = false
         if let place = parsed.place, kind != .note {
-            let line = "Yer: " + place.name + " (" + place.trigger.label + ")"
-            item.notes = item.notes.isEmpty ? line : item.notes + "\n" + line
+            if let match = LocationPlanner.configuredPlace(named: place.name, in: context.places) {
+                item.placeID = match.id
+                item.placeTrigger = place.trigger
+                placeResolved = true
+            } else {
+                let line = "Yer: " + place.name + " (" + place.trigger.label + ")"
+                item.notes = item.notes.isEmpty ? line : item.notes + "\n" + line
+            }
         }
+        // A place-only item keeps dueDate == nil, needsTime == false, defaultedToToday == false (R5–R7 skipped): it
+        // is announced by its geofence notification and nags from locationFiredAt.
+        let placeOnly = placeResolved && item.dueDate == nil
 
         var needsTime = false
         var appliedDefaultTime = false
         var defaultedToToday = false
 
         // R5 urgent task without date (P4) → reminder; R6 applies.
-        if item.kind == .task && item.dueDate == nil && item.priority >= .high {
+        if !placeOnly && item.kind == .task && item.dueDate == nil && item.priority >= .high {
             item.kind = .reminder
         }
         // R6 reminder without due (D20).
-        if item.kind == .reminder && item.dueDate == nil {
+        if !placeOnly && item.kind == .reminder && item.dueDate == nil {
             if context.interactive && settings.noTimeBehavior == .ask {
                 needsTime = true
                 confirmationLevel = .review
@@ -213,7 +225,7 @@ public enum ItemFactory {
             }
         }
         // R7 task without due (D33): today policy, untimed.
-        if item.kind == .task && item.dueDate == nil && capturingSources.contains(source) {
+        if !placeOnly && item.kind == .task && item.dueDate == nil && capturingSources.contains(source) {
             item.dueDate = todayPolicy(now: now, settings: settings, calendar: calendar)
             item.hasTime = false
             defaultedToToday = true

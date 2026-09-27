@@ -60,6 +60,11 @@ struct ConfirmationSheet: View {
                     whenSummary
                 }
                 Group {
+                    if draft.item.placeID != nil {
+                        placeSection
+                    } else if let hint = unconfiguredPlaceHint() {
+                        placeHint(hint)
+                    }
                     if draft.needsTime {
                         needsTimeSection
                     }
@@ -275,6 +280,11 @@ struct ConfirmationSheet: View {
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(Color.asistOverdue)
                 }
+            } else if let place = store.place(item.placeID), let trigger = item.placeTrigger {
+                // 07 §9.10: a place-only item — announced by its geofence, no "Ne zaman?".
+                Label(LocationPlanner.placeLabel(name: place.name, trigger: trigger), systemImage: Symbol.place)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(Color.asistUpcoming)
             } else if draft.needsTime {
                 Text("Ne zaman?")
                     .font(.title3.weight(.semibold))
@@ -314,6 +324,41 @@ struct ConfirmationSheet: View {
                 setUndated()
             }
         }
+    }
+
+    /// 07 §9.10 "Yer": the resolved place with both triggers + "Kaldır" (the card never navigates).
+    private var placeSection: some View {
+        let place = store.place(draft.item.placeID)
+        let name = place?.name ?? "Yer"
+        let current: PlaceTrigger = draft.item.placeTrigger ?? .onArrive
+        return chipSection("Yer", highlighted: false) {
+            Chip(title: LocationPlanner.placeLabel(name: name, trigger: .onArrive), systemImage: Symbol.place,
+                 isSelected: current == .onArrive) {
+                setPlaceTrigger(.onArrive)
+            }
+            Chip(title: LocationPlanner.placeLabel(name: name, trigger: .onLeave), systemImage: Symbol.place,
+                 isSelected: current == .onLeave) {
+                setPlaceTrigger(.onLeave)
+            }
+            Chip(title: "Kaldır", systemImage: "xmark") {
+                removePlace()
+            }
+        }
+    }
+
+    /// 07 §9.1: the sentence named a place whose location is not saved — text only, no button.
+    private func placeHint(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "location.slash")
+                .foregroundStyle(Color.orange)
+                .accessibilityHidden(true)
+            Text(text)
+                .font(.footnote)
+                .foregroundStyle(Color.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
     private var pastHintSection: some View {
@@ -648,21 +693,21 @@ struct ConfirmationSheet: View {
         return minutes.sorted()
     }
 
-    private func recurrencePresets() -> [RecurrencePreset] {
+    private func recurrencePresets() -> [CardRecurrencePreset] {
         let calendar = AppTime.calendar
         guard let due = draft.item.dueDate else { return [] }
         let iso = AsistCalendar.isoWeekday(due, calendar: calendar)
         let weekdayName = TurkishDateFormatter.weekdays[min(6, max(0, iso - 1))]
-        var presets: [RecurrencePreset] = [
-            RecurrencePreset(id: "daily", title: "Her gün", rule: Recurrence(frequency: .daily)),
-            RecurrencePreset(id: "weekdays", title: "Hafta içi",
+        var presets: [CardRecurrencePreset] = [
+            CardRecurrencePreset(id: "daily", title: "Her gün", rule: Recurrence(frequency: .daily)),
+            CardRecurrencePreset(id: "weekdays", title: "Hafta içi",
                              rule: Recurrence(frequency: .weekly, weekdays: [1, 2, 3, 4, 5])),
-            RecurrencePreset(id: "weekly", title: "Her " + weekdayName,
+            CardRecurrencePreset(id: "weekly", title: "Her " + weekdayName,
                              rule: Recurrence(frequency: .weekly, weekdays: [iso]))
         ]
         let day = calendar.component(.day, from: due)
         if day <= 28 {
-            presets.append(RecurrencePreset(id: "monthly", title: "Her ayın " + TurkishDateFormatter.numeralPossessive(day),
+            presets.append(CardRecurrencePreset(id: "monthly", title: "Her ayın " + TurkishDateFormatter.numeralPossessive(day),
                                             rule: Recurrence(frequency: .monthly, monthDay: day)))
         }
         return presets
@@ -676,6 +721,17 @@ struct ConfirmationSheet: View {
         }
         list.sort { TurkishText.fold($0.name) < TurkishText.fold($1.name) }
         return list
+    }
+
+    /// 07 §9.1: the parser heard a place ("Fabrikaya varınca") but no configured place matches → footnote text.
+    /// nil when the card already has a place, for notes, or when a configured place exists (the user removed it).
+    private func unconfiguredPlaceHint() -> String? {
+        guard draft.item.placeID == nil, draft.item.kind != .note, let ref = draft.parse.item?.place else { return nil }
+        guard LocationPlanner.configuredPlace(named: ref.name, in: store.places) == nil else { return nil }
+        let name = ref.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return nil }
+        let target: String = ref.trigger == .onLeave ? "oradan çıkınca" : "oraya varınca"
+        return name + " konumu kayıtlı değil. Ayarlar › Konumlar'dan kaydedersen " + target + " hatırlatırım."
     }
 
     /// Parser heard "X projesi…" but no project/alias matches → offer "Yeni proje: X" (never pre-selected).
@@ -844,6 +900,8 @@ struct ConfirmationSheet: View {
         case .note:
             draft.item.isEvent = false
             draft.item.leadTimesMinutes = []
+            draft.item.placeID = nil                // notes never notify (same rule as ItemFactory R3)
+            draft.item.placeTrigger = nil
             draft.needsTime = false
         case .waiting:
             draft.item.isEvent = false
@@ -854,9 +912,29 @@ struct ConfirmationSheet: View {
             }
             draft.needsTime = false
         case .reminder:
-            draft.needsTime = draft.item.dueDate == nil
+            // A place-only reminder is announced by its geofence (07 §9.4): no "Ne zaman?".
+            draft.needsTime = draft.item.dueDate == nil && draft.item.placeID == nil
         case .task:
             draft.needsTime = false
+        }
+    }
+
+    @MainActor
+    private func setPlaceTrigger(_ trigger: PlaceTrigger) {
+        touch()
+        guard draft.item.placeID != nil, draft.item.placeTrigger != trigger else { return }
+        draft.item.placeTrigger = trigger
+    }
+
+    /// "Kaldır": the item becomes an ordinary one; a reminder without a time asks "Ne zaman?" (D20, like R6).
+    @MainActor
+    private func removePlace() {
+        touch()
+        draft.item.placeID = nil
+        draft.item.placeTrigger = nil
+        draft.item.locationFiredAt = nil
+        if draft.item.kind == .reminder && draft.item.dueDate == nil && store.settings.noTimeBehavior == .ask {
+            draft.needsTime = true
         }
     }
 
@@ -1062,7 +1140,7 @@ private struct DayOption: Identifiable {
     let isSelected: Bool
 }
 
-private struct RecurrencePreset: Identifiable {
+private struct CardRecurrencePreset: Identifiable {
     let id: String
     let title: String
     let rule: Recurrence

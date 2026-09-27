@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Project | **Asist** — native iOS voice assistant for an automation manager (all UI/voice text Turkish) |
-| Date | 2026-09-27 (Sunday), Europe/Istanbul — revision 2 (critiques 05a + 05b applied, see §12); revision 3 (WP13 Akıllı Mod activated from Appendix B.2, see §12.1) |
+| Date | 2026-09-27 (Sunday), Europe/Istanbul — revision 2 (critiques 05a + 05b applied, see §12); revision 3 (WP13 Akıllı Mod activated from Appendix B.2, see §12.1); revision 4 (F1–F7: Düzenle, widgets + controls, update check, weekly report, people board, location reminders, calendar — delta spec `07_revision4_features.md`, see §12.2) |
 | Status | **Binding.** Supersedes any conflicting detail in 01a / 01b / 01c / 02 / 03 / 05a / 05b / 06 (see §0.3). Critique items not adopted are listed with reasons in §11. |
 | Toolchain | iOS deployment target **17.0**, device iPhone 14 Pro Max on iOS 26, CI Xcode **26.x** (macos-26 runner), **Swift language mode 5**, `SWIFT_STRICT_CONCURRENCY = minimal`, XcodeGen 2.46.0 |
 | Verification | No local compiler. The only compiler is CI (Linux `swift test` for AsistCore + macOS `xcodebuild`). Every rule below exists to make the **first CI build** succeed. |
@@ -5304,11 +5304,20 @@ Appendix B.2 applied with these deltas (the implemented contract is §3.5.9 / §
 - **Trigger:** `smartModeEnabled && smartModeAutoOnLowConfidence`, not a command, and `.smartModeSuggested` / confidence < 0.60 / `.noKindCue`. An upgrade needs a validated item that is more confident than the on-device parse and a card the user has not edited; a Smart Mode command reading is never auto-executed.
 - **Privacy / logging (§4.3):** off by default; the settings screen names exactly what is sent; the key lives only in the Keychain (never in `AppSettings`, exports or backups); logs are content-free.
 
+### 12.2 Revision 4 — F1–F7 (2026-09-27, user request; delta spec `docs/design/07_revision4_features.md`)
+
+The binding delta for this revision is **`07_revision4_features.md`** (it overrides this document where they differ; everything it does not mention stays as written here). Summary:
+- **Device facts corrected:** the device runs **iOS 18.7.8** (not 26): no AlarmKit; iOS 18 `ControlWidget` available. Deployment target of the app stays **17.0**; the new widget extension uses **18.0**.
+- **Activated from Appendix B:** B.3 (location reminders, WP14 → F6, adjusted: `LocationService` is a non-NSObject `@Observable` singleton with a separate `LocationDelegate`, pure selection in `AsistCore/Location/LocationPlanner.swift`, planner guard for place-only items removed) and B.4 (widgets + controls, WP12 → F2, adjusted: extension target `AsistWidgets` at iOS 18.0, controls use the new `Shared/Intents/AsistAcIntent.swift` (`OpenIntent` + `AsistEkran` AppEnum) — `DinleIntent` stays unchanged in `App/Intents/`; widget kinds small/medium, accessoryCircular, accessoryRectangular; App Group entitlement on both targets; each install now consumes **2 App IDs**). B.5's "calendar read" is pulled forward as F7 (EventKit read-only).
+- **New features:** F1 swipe "Düzenle" → compact `ItemEditSheet` (new `SheetRoute.editItem`), F3 update check (`surum.json` on release `son-surum`, Settings › Güncelleme, Today banner), F4 weekly report, F5 Kişiler panosu, F7 Takvim section on Bugün.
+- **Contract surfaces changed** (exact code in 07 §11): `AppSettings` (+`updateCheckEnabled`, `calendarOnToday`, `calendarLeadMinutes`), `AppMeta` (+`lastUpdateCheckAt`, `latestBuildSeen`, `latestBuildDate`, `latestBuildNotes`), `CaptureSource.calendar`, `DeepLink.editItem` / `.screen(DeepLinkScreen)` (`asist://kayit/<id>?eylem=duzenle`, `asist://ekran/<kod>`), `Route` (+7 cases), `SheetRoute.editItem`, `PendingAction` (+2), `AppRouter.push/openScreen`, `AppEnvironment` hooks, Info.plist `NSLocationWhenInUseUsageDescription` + `NSCalendarsFullAccessUsageDescription`, `project.yml` (extension target, `Shared/`, entitlements, `MARKETING_VERSION` 1.1.0), `package-ipa.sh` (appex then app, entitlements), `ci.yml` release (`surum.json`), `simulator-smoke.sh` (new visits + appex check).
+- **§9 amendments:** r3 (second `@main`: `AsistWidgetBundle` in `Widgets/`), r4 (`Shared/` exists; `#if ASIST_APP` wraps app-only code in shared intents), r34 (`import CoreLocation` only in `App/Location/LocationService.swift`, `import EventKit` only in `App/Calendar/CalendarService.swift`, `import WidgetKit` only in `Widgets/*` and `App/Platform/WidgetSnapshotWriter.swift`); new hazards 07 §2.2.
+
 ---
 
 ## Appendix B — Deferred features (binding design, NOT compiled in v1.0)
 
-Activation rule: a deferred feature is built only by its own WP after v1.0 has been installed and used; the WP first re-applies the listed deltas to §2/§3/§7 of this document (as a revision 3 change log entry), then implements. Until then no v1.0 file may import `WidgetKit`, `CoreLocation` or `Security`, or reference any type below. **B.2 (Akıllı Mod) was activated by revision 3 (§12.1); B.3 / B.4 / B.5 remain deferred.**
+Activation rule: a deferred feature is built only by its own WP after v1.0 has been installed and used; the WP first re-applies the listed deltas to §2/§3/§7 of this document (as a revision 3 change log entry), then implements. Until then no v1.0 file may import `WidgetKit`, `CoreLocation` or `Security`, or reference any type below. **B.2 (Akıllı Mod) was activated by revision 3 (§12.1); B.3 and B.4 were activated by revision 4 (§12.2, with the deltas of `07_revision4_features.md`, which win over B.3/B.4 text); B.5 remains deferred except the calendar read (F7).**
 
 ### B.1 Summary
 

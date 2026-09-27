@@ -10,16 +10,27 @@ public enum DeepLinkTab: String, CaseIterable, Equatable {
     case settings = "ayarlar"
 }
 
+/// Target of `asist://ekran/<kod>` (revision 4, 07 R4-D9): opens a screen on its tab. ASCII lowercase codes.
+public enum DeepLinkScreen: String, CaseIterable, Equatable {
+    case weeklyReport = "haftalik-rapor"
+    case people = "kisiler"
+    case places = "konumlar"
+    case updates = "guncelleme"
+    case calendar = "takvim"
+}
+
 public enum DeepLink: Equatable {
     case listen(kind: ItemKind?, projectID: UUID?)   // asist://dinle?tur=hatirlatma|gorev|not|takip&proje=<uuid>
     case compose                                     // asist://yaz
     case today                                       // asist://bugun
     case item(UUID)                                  // asist://kayit/<uuid>
     case completeItem(UUID)                          // asist://kayit/<uuid>?eylem=yaptim
+    case editItem(UUID)                              // asist://kayit/<uuid>?eylem=duzenle
     case endOfDay                                    // asist://gunsonu
     case readAgenda                                  // asist://oku
     case settingsTriggers                            // asist://ayarlar/tetikleyiciler
     case tab(DeepLinkTab)                            // asist://sekme/bugun|listeler|projeler|ayarlar
+    case screen(DeepLinkScreen)                      // asist://ekran/haftalik-rapor|kisiler|konumlar|guncelleme|takvim
 
     public static let scheme = "asist"
 
@@ -44,6 +55,10 @@ public enum DeepLink: Equatable {
             c.host = "kayit"
             c.path = "/" + id.uuidString
             c.queryItems = [URLQueryItem(name: "eylem", value: "yaptim")]
+        case .editItem(let id):
+            c.host = "kayit"
+            c.path = "/" + id.uuidString
+            c.queryItems = [URLQueryItem(name: "eylem", value: "duzenle")]
         case .endOfDay:
             c.host = "gunsonu"
         case .readAgenda:
@@ -54,6 +69,9 @@ public enum DeepLink: Equatable {
         case .tab(let tab):
             c.host = "sekme"
             c.path = "/" + tab.rawValue
+        case .screen(let screen):
+            c.host = "ekran"
+            c.path = "/" + screen.rawValue
         }
         return c.url ?? URL(string: "asist://bugun")!
     }
@@ -76,7 +94,11 @@ public enum DeepLink: Equatable {
             self = .today
         case "kayit":
             guard let first = pathParts.first, let id = UUID(uuidString: first) else { return nil }
-            self = query("eylem") == "yaptim" ? .completeItem(id) : .item(id)
+            switch query("eylem") ?? "" {
+            case "yaptim": self = .completeItem(id)
+            case "duzenle": self = .editItem(id)
+            default: self = .item(id)
+            }
         case "gunsonu":
             self = .endOfDay
         case "oku":
@@ -86,6 +108,9 @@ public enum DeepLink: Equatable {
         case "sekme":
             guard let first = pathParts.first, let tab = DeepLinkTab(rawValue: first.lowercased()) else { return nil }
             self = .tab(tab)
+        case "ekran":
+            guard let first = pathParts.first, let screen = DeepLinkScreen(rawValue: first.lowercased()) else { return nil }
+            self = .screen(screen)
         default:
             return nil
         }

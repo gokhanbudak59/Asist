@@ -36,6 +36,11 @@ public struct AppMeta: Codable, Equatable, Hashable {
     public var installDate: Date? = nil                   // UI-only signing estimate (05a #28)
     /// CFBundleVersion of the build that last saved this file (D35). 0 = unknown / revision-1 file.
     public var writerBuild: Int = 0
+    /// F3 (07): last successful update check and the newest build seen in `surum.json`.
+    public var lastUpdateCheckAt: Date? = nil
+    public var latestBuildSeen: Int = 0
+    public var latestBuildDate: Date? = nil
+    public var latestBuildNotes: String? = nil
 
     public init() {}
 
@@ -43,6 +48,7 @@ public struct AppMeta: Codable, Equatable, Hashable {
         case createdAt, lastSavedAt, lastProfileStamp, lastReconcileAt, lastReconcileReason, lastPlannedCount
         case lastDroppedCount, lastBackgroundRefreshAt, lastDailyBackupDay, lastEndOfDayMove, composeDraft
         case dismissedBanners, installDate, writerBuild
+        case lastUpdateCheckAt, latestBuildSeen, latestBuildDate, latestBuildNotes
     }
 
     public init(from decoder: Decoder) throws {
@@ -62,6 +68,10 @@ public struct AppMeta: Codable, Equatable, Hashable {
         dismissedBanners = c.lenient([String: Date].self, forKey: .dismissedBanners, default: [:])
         installDate = c.lenientOptional(Date.self, forKey: .installDate)
         writerBuild = max(0, c.lenient(Int.self, forKey: .writerBuild, default: 0))
+        lastUpdateCheckAt = c.lenientOptional(Date.self, forKey: .lastUpdateCheckAt)
+        latestBuildSeen = max(0, c.lenient(Int.self, forKey: .latestBuildSeen, default: 0))
+        latestBuildDate = c.lenientOptional(Date.self, forKey: .latestBuildDate)
+        latestBuildNotes = c.lenientOptional(String.self, forKey: .latestBuildNotes)
     }
 }
 

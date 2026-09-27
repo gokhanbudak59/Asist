@@ -290,8 +290,8 @@ extension NagPlanner {
     static func itemDraft(item: Item, slot: Int, input: PlanInput, rules: NagTimeRules) -> NagItemDraft {
         var draft = NagItemDraft()
         guard item.isNotifiable, let rawAnchor = item.anchorDate else { return draft }
-        // Place-only items (no due date) have no geofence in v1.0.
-        guard item.placeID == nil || item.dueDate != nil else { return draft }
+        // 07 §9.3: a place-only item has anchorDate == locationFiredAt (nil until its geofence notification was
+        // delivered → nothing planned; LocationService owns the asist.loc.* request) or its snooze.
 
         let settings = input.settings
         let calendar = input.calendar

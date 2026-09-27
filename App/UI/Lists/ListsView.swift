@@ -52,7 +52,8 @@ enum ListItemSearch {
 }
 
 /// One navigable list row (value-based `NavigationLink`, 04 §5.1) with the 03 §4.7 swipe actions:
-/// leading Yaptım (+ "Doğru" on "Emin değilim" rows, 05b D8) or Yeniden aç; trailing Sil (+ Ertele).
+/// leading Yaptım (+ "Doğru" on "Emin değilim" rows, 05b D8) or Yeniden aç; trailing Sil (+ Ertele) + Düzenle on
+/// open rows (07 §4.6: the compact edit sheet).
 @MainActor
 struct ListItemLink: View {
     let item: Item
@@ -62,9 +63,10 @@ struct ListItemLink: View {
 
     @Environment(DataStore.self) private var store
     @Environment(ToastCenter.self) private var toasts
+    @Environment(AppRouter.self) private var router
 
     /// Explicit: private @Environment storage must not narrow the memberwise initializer's access level
-    /// (CompletedListView, EndOfDayView and ProjectDetailView construct it too).
+    /// (CompletedListView, EndOfDayView, ProjectDetailView and PersonDetailView construct it too).
     init(item: Item, projectName: String?, now: Date, onSnooze: ((Item) -> Void)? = nil) {
         self.item = item
         self.projectName = projectName
@@ -129,6 +131,14 @@ struct ListItemLink: View {
             }
             .tint(Color.asistToday)
         }
+        if item.isOpen {
+            Button {
+                router.present(.editItem(item.id))
+            } label: {
+                Label("Düzenle", systemImage: "pencil")
+            }
+            .tint(Color.asistAccent)
+        }
     }
 
     private func toggleDone() {
@@ -181,6 +191,15 @@ struct ListsView: View {
         .navigationTitle("Listeler")
         .searchable(text: $query, prompt: "Ara: başlık, not, kişi, proje")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    router.push(.people)
+                } label: {
+                    Image(systemName: "person.2")
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .accessibilityLabel("Kişiler")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 optionsMenu
             }

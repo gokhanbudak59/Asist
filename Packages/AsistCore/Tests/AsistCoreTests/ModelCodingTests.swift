@@ -126,6 +126,11 @@ final class ModelCodingTests: XCTestCase {
         meta.dismissedBanners = ["kalici": TestSupport.date("2026-10-27T10:00")]
         meta.installDate = TestSupport.date("2026-09-20T09:00")
         meta.writerBuild = 57
+        // Revision 4 (07 §11.2): nil optionals are not encoded, so every new optional is set here.
+        meta.lastUpdateCheckAt = TestSupport.date("2026-09-27T09:00")
+        meta.latestBuildSeen = 61
+        meta.latestBuildDate = TestSupport.date("2026-09-27T08:45")
+        meta.latestBuildNotes = "Düzenle, widget'lar"
         return meta
     }
 

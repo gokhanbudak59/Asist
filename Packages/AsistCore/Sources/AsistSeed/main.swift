@@ -113,6 +113,19 @@ enum SeedScenario {
                     color: .purple, createdAt: created)
         ]
     }
+
+    /// 07 §F6: one configured place (Fabrika) and two empty slots, as the Konumlar screen seeds them.
+    static func places(now: Date) -> [Place] {
+        let created = SeedBuilder.minutesBefore(now, 10 * 1_440)
+        return [
+            Place(id: SeedBuilder.seedUUID(group: 3, 1), name: "Fabrika", aliases: ["saha"], latitude: 40.7806,
+                  longitude: 29.9420, radiusMeters: 200, createdAt: created),
+            Place(id: SeedBuilder.seedUUID(group: 3, 2), name: "Ofis", latitude: 0, longitude: 0,
+                  radiusMeters: 150, createdAt: created),
+            Place(id: SeedBuilder.seedUUID(group: 3, 3), name: "Ev", latitude: 0, longitude: 0,
+                  radiusMeters: 150, createdAt: created)
+        ]
+    }
 }
 
 // MARK: - Builder
@@ -167,7 +180,7 @@ enum SeedBuilder {
         meta.writerBuild = 0                      // "unknown" — never newer than the running build (D35)
 
         let data = AppData(schemaVersion: AppData.currentSchemaVersion, items: items, projects: projects,
-                           places: [], settings: settings, meta: meta)
+                           places: SeedScenario.places(now: now), settings: settings, meta: meta)
 
         let snapshot = AgendaBuilder.snapshot(items: items, now: now, settings: settings, calendar: calendar)
         var line = "Bugün ekranı: geciken=" + String(snapshot.overdue.count)

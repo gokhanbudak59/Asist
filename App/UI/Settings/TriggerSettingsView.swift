@@ -1,5 +1,5 @@
 // WP11 — Tetikleyiciler (03 §4.11, §5.1–5.2; 04 §5.2, §3.7 recipes). Volume-key trigger settings, listening
-// settings and the setup guides. Settings edit pattern of §9 r22.
+// settings and the setup guides. Settings edit pattern of §9 r22. Revision 4: first row opens WidgetGuideView.
 import SwiftUI
 import AppIntents
 import AsistCore
@@ -14,6 +14,19 @@ struct TriggerSettingsView: View {
 
     var body: some View {
         Form {
+            Section {
+                // Revision 4 (07 §5.10): a view-destination link, so Route (integrator-owned) stays unchanged.
+                NavigationLink(destination: WidgetGuideView()) {
+                    SettingsRowLabel(title: "Kilit ekranı ve widget'lar",
+                                     subtitle: "Asist Dinle düğmesi, Denetim Merkezi, ana ekran",
+                                     systemImage: "lock.iphone")
+                }
+            } header: {
+                Text("Tek dokunuşla dinle")
+            } footer: {
+                Text("iOS 18'de kilit ekranının altına ve Denetim Merkezi'ne “Asist Dinle” düğmesi eklenebilir; uygulama kapalıyken en hızlı yol budur.")
+            }
+
             Section {
                 NavigationLink(value: Route.guide(.backTap)) {
                     SettingsRowLabel(title: "Arkaya Dokunma: Asist Hızlı Kayıt",
@@ -43,7 +56,7 @@ struct TriggerSettingsView: View {
             } header: {
                 Text("Uygulama kapalıyken")
             } footer: {
-                Text("iOS, uygulamaların ses tuşlarını arka planda veya kilit ekranında dinlemesine izin vermez. Uygulama kapalıyken en hızlı yollar: yan tuşa basılı tutup “Asist'e kaydet” demek (kilitliyken bile) ve telefonun arkasına dokunmak.")
+                Text("iOS, uygulamaların ses tuşlarını arka planda veya kilit ekranında dinlemesine izin vermez. Uygulama kapalıyken en hızlı yollar: kilit ekranındaki “Asist Dinle” düğmesi, yan tuşa basılı tutup “Asist'e kaydet” demek (kilitliyken bile) ve telefonun arkasına dokunmak.")
             }
 
             Section {

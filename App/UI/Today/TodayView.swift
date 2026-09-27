@@ -3,6 +3,7 @@
 // GECİKENLER / EMİN OLAMADIKLARIM / BUGÜN / TAKİP / YAKLAŞAN / ZAMANI BELİRSİZ + "Bu hafta n iş bitti",
 // with the Yaz / Mic / Oku bar pinned above the tab bar. The agenda snapshot is computed once per render inside
 // TimelineView(.everyMinute), so relative times refresh every minute and after every store change.
+// Revision 4 (07 §11.8): "Yeni sürüm" band, TAKVİM section, "…" menu (Haftalık rapor, Kişiler), swipe "Düzenle".
 import SwiftUI
 import AsistCore
 
@@ -38,6 +39,7 @@ struct TodayView: View {
                         .contentShape(Rectangle())
                 }
                 .accessibilityLabel("Gün sonu")
+                TodayMoreMenu()
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -71,6 +73,7 @@ struct TodayView: View {
                         .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4))
                 }
                 bannerSection(now: now)
+                UpdateBannerSection()
                 muteSection(now: now, settings: settings)
                 movedSection(now: now)
                 emptySection(sections)
@@ -80,6 +83,7 @@ struct TodayView: View {
                 itemSection("EMİN OLAMADIKLARIM", items: sections.review, color: Color.orange, now: now,
                             isReview: true)
                 itemSection("BUGÜN", items: sections.today, color: Color.asistToday, now: now, isReview: false)
+                CalendarTodaySection(now: now)
                 itemSection("TAKİP", items: sections.followUps, color: Color.asistFollowUp, now: now,
                             isReview: false)
                 upcomingSection(sections, now: now)
@@ -306,6 +310,12 @@ struct TodayView: View {
                 Label("Ertele", systemImage: Symbol.snooze)
             }
             .tint(Color.asistToday)
+            Button {
+                router.present(.editItem(id))
+            } label: {
+                Label("Düzenle", systemImage: "pencil")
+            }
+            .tint(Color.asistAccent)
         }
     }
 

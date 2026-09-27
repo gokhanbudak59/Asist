@@ -101,7 +101,7 @@ public struct PlanInput {
     public var calendar: Calendar
     /// Profile expiry; nil when the embedded profile is unreadable (then no signing notifications, no clamp).
     public var signingExpiry: Date?
-    /// Pending `asist.loc.*` requests (v1.2; always 0 in v1.0).
+    /// Pending asist.loc.* requests (LocationService.activeCount, ≤ 10; 07 R4-D7).
     public var locationSlotsUsed: Int
     /// false when UNNotificationSettings.timeSensitiveSetting != .enabled → every .timeSensitive becomes .active (05b B7).
     public var allowTimeSensitive: Bool

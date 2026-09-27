@@ -500,6 +500,12 @@ main() {
     FAILED=1
     return 1
   fi
+  if [ -d "$APP_PATH/PlugIns/AsistWidgets.appex" ]; then
+    note "Widget uzantısı: var (PlugIns/AsistWidgets.appex)"
+  else
+    note "HATA: widget uzantısı uygulamaya gömülmemiş (PlugIns/AsistWidgets.appex yok)"
+    FAILED=1
+  fi
   if ! pick_device; then
     FAILED=1
     return 1
@@ -555,16 +561,22 @@ main() {
   visit "asist://sekme/listeler" "03-listeler" "Listeler sekmesi (asist://sekme/listeler)"
   visit "asist://sekme/projeler" "04-projeler" "Projeler sekmesi (asist://sekme/projeler)"
   visit "asist://sekme/ayarlar" "05-ayarlar" "Ayarlar sekmesi (asist://sekme/ayarlar)"
-  # Akıllı Mod ekranı v1.0'da yok (Ek B, v1.1); ulaşılabilen ayar alt ekranı Tetikleyiciler.
+  # Ayar alt ekranı: Tetikleyiciler (kilit ekranı / widget rehberi bağlantısı burada).
   visit "asist://ayarlar/tetikleyiciler" "06-ayarlar-tetikleyiciler" "Ayarlar › Tetikleyiciler"
   if [ -n "$DETAIL_ID" ]; then
     visit "asist://kayit/$DETAIL_ID" "07-kayit-detay" "Kayıt ayrıntısı (asist://kayit/$DETAIL_ID)"
+    visit "asist://kayit/$DETAIL_ID?eylem=duzenle" "07a-kayit-duzenle" "Düzenle sayfası (asist://kayit/…?eylem=duzenle)"
   else
     note "UYARI: tohumdan kayıt kimliği gelmedi; ayrıntı ekranı atlandı"
   fi
   visit "asist://gunsonu" "08-gun-sonu" "Gün sonu (asist://gunsonu)"
   visit "asist://yaz" "09-yaz" "Yaz sayfası (asist://yaz)" 9
   visit "asist://sekme/bugun" "10-bugun-sekme" "asist://sekme/bugun (sayfa kapanır, Bugün kökü)"
+  visit "asist://ekran/haftalik-rapor" "10a-haftalik-rapor" "Haftalık rapor (asist://ekran/haftalik-rapor)"
+  visit "asist://ekran/kisiler" "10b-kisiler" "Kişiler (asist://ekran/kisiler)"
+  visit "asist://ekran/konumlar" "10c-konumlar" "Ayarlar › Konumlar (asist://ekran/konumlar)"
+  visit "asist://ekran/takvim" "10d-takvim" "Ayarlar › Takvim (asist://ekran/takvim)"
+  visit "asist://ekran/guncelleme" "10e-guncelleme" "Ayarlar › Güncelleme (asist://ekran/guncelleme)" 9
 
   # 2) Temiz kurulum (tohumsuz): tanıtım ekranı
   xcrun simctl terminate "$UDID" "$BUNDLE_ID" >>"$LOG" 2>&1 || true

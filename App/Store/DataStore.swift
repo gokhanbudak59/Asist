@@ -368,6 +368,20 @@ final class DataStore {
         }
     }
 
+    /// 07 §9.6 (B.3, 05a #5): records the delivery of the item's geofence notification. No-op (no save, no onChange)
+    /// when the item is missing, not open, has no place, or locationFiredAt is already set.
+    func recordLocationFired(_ id: UUID, at date: Date) {
+        let now = Date()
+        _ = replaceItem(id, label: "Konum bildirimi", change: .items) { original in
+            guard original.status == .open, original.placeID != nil, original.locationFiredAt == nil else { return nil }
+            var copy = original
+            copy.locationFiredAt = AsistCalendar.floorToMinute(date)
+            copy.updatedAt = now
+            copy.appendHistory(.locationFired, at: date)
+            return copy
+        }
+    }
+
     /// status .deleted + deletedAt (soft delete; purge after 30 days).
     @discardableResult func delete(_ id: UUID, at now: Date) -> UndoToken? {
         replaceItem(id, label: "Silindi", change: .items) { original in
@@ -549,7 +563,7 @@ final class DataStore {
         _ = commit(newData, change: .projects)
     }
 
-    /// onChange(.places) (no v1.0 caller).
+    /// onChange(.places). Callers: Ayarlar › Konumlar and Yer düzenle (07 §9.7–9.8).
     func upsertPlace(_ place: Place) {
         guard isLoaded else {
             logSkipped("yer kaydı")

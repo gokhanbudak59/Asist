@@ -55,6 +55,10 @@ final class DeepLinkTests: XCTestCase {
         for tab in DeepLinkTab.allCases {
             links.append(.tab(tab))
         }
+        links.append(.editItem(itemID))
+        for screen in DeepLinkScreen.allCases {
+            links.append(.screen(screen))
+        }
         return links
     }
 
@@ -80,9 +84,22 @@ final class DeepLinkTests: XCTestCase {
             case .readAgenda: seen.insert("readAgenda")
             case .settingsTriggers: seen.insert("settingsTriggers")
             case .tab: seen.insert("tab")
+            case .editItem: seen.insert("editItem")
+            case .screen: seen.insert("screen")
             }
         }
-        XCTAssertEqual(seen.count, 9)
+        XCTAssertEqual(seen.count, 11)
+    }
+
+    func testRevision4URLsAreStable() {
+        XCTAssertEqual(DeepLink.editItem(itemID).url.absoluteString,
+                       "asist://kayit/3F2504E0-4F89-11D3-9A0C-0305E82C3301?eylem=duzenle")
+        XCTAssertEqual(DeepLink.screen(.weeklyReport).url.absoluteString, "asist://ekran/haftalik-rapor")
+        XCTAssertEqual(DeepLink.screen(.people).url.absoluteString, "asist://ekran/kisiler")
+        XCTAssertEqual(parse("asist://EKRAN/KISILER"), .screen(.people))
+        XCTAssertNil(parse("asist://ekran/bilinmeyen"))
+        XCTAssertNil(parse("asist://ekran"))
+        XCTAssertEqual(parse("asist://kayit/3F2504E0-4F89-11D3-9A0C-0305E82C3301?eylem=bilinmeyen"), .item(itemID))
     }
 
     func testItemKindCasesAreAllListed() {

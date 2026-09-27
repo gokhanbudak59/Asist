@@ -5,7 +5,7 @@ public enum NotificationID {
     public static let prefix = "asist."
     /// Requests the app schedules ad hoc (test, feedback); never touched by the diff-apply.
     public static let unmanagedPrefix = "asist.x."
-    /// v1.2 location reminders (Appendix B.3). No v1.0 code creates these ids; the diff-apply never touches them.
+    /// Location reminders (07 §9): created only by LocationService; the diff-apply never touches them.
     public static let locationPrefix = "asist.loc."
 
     public static func chain(_ itemID: UUID, _ k: Int) -> String { "asist.i.\(itemID.uuidString).\(k)" }

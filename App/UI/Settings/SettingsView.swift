@@ -26,13 +26,22 @@ struct SettingsView: View {
                 }
                 NavigationLink(value: Route.triggerSettings) {
                     SettingsRowLabel(title: "Tetikleyiciler",
-                                     subtitle: "Arkaya Dokunma, Siri, ses kısma tuşu",
+                                     subtitle: "Kilit ekranı düğmesi, Arkaya Dokunma, Siri, ses tuşu",
                                      systemImage: Symbol.backTap)
                 }
                 // WP13: destination link (no Route case needed; the stack's value-based destinations are unaffected).
                 NavigationLink(destination: SmartModeSettingsView()) {
                     SettingsRowLabel(title: "Akıllı Mod", subtitle: smartSubtitle(settings),
                                      systemImage: Symbol.smartMode)
+                }
+                // Revision 4 (07 §11.10)
+                NavigationLink(value: Route.places) {
+                    SettingsRowLabel(title: "Konumlar", subtitle: PlacesSettingsText.subtitle(places: store.places),
+                                     systemImage: "location.fill")
+                }
+                NavigationLink(value: Route.calendarSettings) {
+                    SettingsRowLabel(title: "Takvim", subtitle: CalendarSettingsText.subtitle(settings: settings),
+                                     systemImage: "calendar")
                 }
             }
 
@@ -78,6 +87,15 @@ struct SettingsView: View {
                         Label("İmza ve izinler", systemImage: "checkmark.seal")
                         Spacer()
                         signingValue(now: Date())
+                    }
+                }
+                NavigationLink(value: Route.updates) {
+                    HStack {
+                        Label("Güncelleme", systemImage: "arrow.down.circle")
+                        Spacer()
+                        Text(UpdateSettingsText.value(meta: store.meta, settings: settings))
+                            .font(.subheadline)
+                            .foregroundStyle(UpdateSettingsText.isAvailable(meta: store.meta) ? Color.orange : Color.secondary)
                     }
                 }
                 NavigationLink(value: Route.diagnostics) {

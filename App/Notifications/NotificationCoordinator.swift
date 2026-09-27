@@ -25,7 +25,13 @@ final class NotificationCoordinator: NSObject, UNUserNotificationCenterDelegate 
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .list, .sound, .badge])
+        let identifier = notification.request.identifier
+        let deliveredAt = notification.date
         Task { @MainActor in
+            // 07 §9.6: a geofence notification shown in the foreground starts the item's nag chain.
+            if identifier.hasPrefix(NotificationID.locationPrefix), let itemID = NotificationID.itemID(from: identifier) {
+                AppEnvironment.shared.store.recordLocationFired(itemID, at: deliveredAt)
+            }
             AppEnvironment.shared.engine.requestReconcile(reason: "willPresent")
         }
     }

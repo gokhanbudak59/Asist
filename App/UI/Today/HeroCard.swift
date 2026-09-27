@@ -1,6 +1,7 @@
 // WP9 (04 §5.2; 03 §4.3, §7.5; 05b D5): "Şimdi ilgilen" card for the first overdue item.
 // Four 56 pt buttons ✓ Yaptım / 10 dk / 1 saat / Yarın (store + undo toast + haptic) and the "Sesle ertele" chip
-// (next utterance = new time for this item). Tapping the title opens the detail.
+// (next utterance = new time for this item) + the "Düzenle" chip (edit sheet, 07 §4.6). Tapping the title opens the
+// detail.
 import SwiftUI
 import AsistCore
 
@@ -47,10 +48,15 @@ struct HeroCard: View {
                     snoozeButtons
                 }
             }
-            Chip(title: "Sesle ertele", systemImage: Symbol.voiceSnooze) {
-                ItemQuickActions.voiceSnooze(item.id, voice: voice)
+            ChipRow {
+                Chip(title: "Sesle ertele", systemImage: Symbol.voiceSnooze) {
+                    ItemQuickActions.voiceSnooze(item.id, voice: voice)
+                }
+                .accessibilityHint("Yeni zamanı söyle, örneğin perşembe 10'da")
+                Chip(title: "Düzenle", systemImage: "pencil") {
+                    router.present(.editItem(item.id))
+                }
             }
-            .accessibilityHint("Yeni zamanı söyle, örneğin perşembe 10'da")
         }
         .padding(.vertical, Metrics.padding)
         .padding(.trailing, Metrics.padding)

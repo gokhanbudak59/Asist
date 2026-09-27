@@ -89,7 +89,7 @@ public enum PlaceTrigger: String, Codable, CaseIterable, Hashable {
 }
 
 public enum CaptureSource: String, Codable, CaseIterable, Hashable {
-    case voice, keyboard, siri, shortcut, widget, notification, importFile, smartMode, other
+    case voice, keyboard, siri, shortcut, widget, notification, importFile, smartMode, calendar, other
 
     public init(from decoder: Decoder) throws {
         let raw = (try? decoder.singleValueContainer().decode(String.self)) ?? ""
@@ -107,6 +107,7 @@ public enum CaptureSource: String, Codable, CaseIterable, Hashable {
         case .notification: return "bildirimden"
         case .importFile: return "içe aktarmayla"
         case .smartMode: return "Akıllı Mod ile"
+        case .calendar: return "takvimden"
         case .other: return "elle"
         }
     }

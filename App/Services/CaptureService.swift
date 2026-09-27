@@ -703,6 +703,10 @@ final class CaptureService {
             return "Not kaydedildi"
         }
         guard let anchor = item.anchorDate else {
+            // Revision 4 (07 §9.10): a place reminder without a date says where it will ring.
+            if let place = store.place(item.placeID), let trigger = item.placeTrigger {
+                return "Kaydedildi · " + LocationPlanner.placeLabel(name: place.name, trigger: trigger)
+            }
             return "Kaydedildi · Zamanı belirsiz"
         }
         let when = TurkishDateFormatter.shortDateTime(anchor, now: now, calendar: calendar,
