@@ -254,6 +254,7 @@ imza bitiyor, mikrofon kapalı, "Kalıcı" banner ipucu gibi. Bantaki düğme do
 | Tetikleyiciler | Ses kısma tuşu, sessizlik süresi, cihaz içi tanıma, kurulum rehberleri |
 | Veriler | Dışa/içe aktar, günlük yedekler, son silinenler |
 | İmza ve izinler | İmza bitişi, bildirim/mikrofon izinleri, Banner Stili, veri dosyası durumu |
+| Akıllı Mod | Claude API anahtarı, model seçimi, "Emin olamadığımda Akıllı Mod'a sor", Bağlantıyı dene |
 | Tanılama | Son planlama, bekleyen bildirimler (n/64), günlük, **Test bildirimi (10 sn)**, **Planı yeniden kur** |
 
 **Sesli onaylar** yalnızca kulaklık, Bluetooth veya araç bağlıyken söylenir (toplantıda hoparlörden konuşmam);
@@ -262,7 +263,27 @@ okurum.
 
 ---
 
-## 7. Bilmende fayda var
+## 7. Akıllı Mod (isteğe bağlı, Claude)
+
+Asist söylediklerini **telefonun içinde** anlar; internet gerekmez. Çok serbest ya da karışık bir cümlede emin
+olamazsa ve sen istersen **Akıllı Mod** devreye girer:
+
+- **Belirsiz cümleler:** Kart önce telefondaki yorumla açılır; Akıllı Mod daha iyi bir yorum bulursa kart
+  güncellenir ve **"Akıllı Mod ile yorumlandı"** yazar. Siri/Kestirme ile kayıtta en fazla ~8 saniye bekler.
+- **Takip mesajı taslağı:** Bir Takip kaydında **Hatırlatma mesajı gönder…** › **Akıllı taslak** — kibar bir Türkçe hatırlatma mesajı.
+- **Proje notu özeti:** Proje › **Notlar** › **Özetle** — özet ve yapılacaklar.
+
+**Açmak için:** Ayarlar › **Akıllı Mod** › Anthropic API anahtarını yapıştır › **Kaydet** › **Bağlantıyı dene** ›
+anahtarı aç. Anahtar yalnız bu iPhone'un güvenli kasasında (Keychain) durur, yedeklere ve dışa aktarıma girmez.
+Model: **Claude Opus 5** (varsayılan, en akıllı), **Sonnet 5** (dengeli) veya **Haiku 4.5** (en hızlı/ucuz).
+
+**Gizlilik ve ücret:** Akıllı Mod yalnız sen açtığında çalışır. Açıkken söylediğin cümle (taslak/özet için ilgili
+kayıt veya not metni) Anthropic'e gönderilir; kullanım başına küçük bir ücret API hesabından düşer. Kapalıyken
+hiçbir şey telefondan çıkmaz. İnternet yoksa Asist sessizce telefondaki yoruma döner; kayıt kaybolmaz.
+
+---
+
+## 8. Bilmende fayda var
 
 - iOS bir uygulama için en fazla **64** bekleyen bildirim tutar. Asist en yakın ve en önemli olanları planlar;
   sığmayanlar için "planı tazelemek için Asist'i aç" bildirimi gönderir. Asist'i günde bir kez açman her şeyi tazeler.

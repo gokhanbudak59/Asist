@@ -314,3 +314,36 @@ jobs:
           git -C out add -A
           git -C out commit -q -m "CI günlükleri #$RUN (core: $CORE, ios: $IOS, sim: $SIM)"
           git -C out push -q "$URL" HEAD:ci-logs
+
+  release:
+    name: Son Sürüm sayfasına yükle (herkese açık indirme)
+    needs: [core-tests, ios, simulator]
+    if: success() && github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.mod == 'ipa')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: IPA'ları indir
+        uses: actions/download-artifact@v8
+        with:
+          pattern: "Asist*.ipa"
+          merge-multiple: true
+          path: out
+      - name: son-surum sürümünü güncelle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.run_number }}
+        run: |
+          ls -la out
+          test -f out/Asist.ipa
+          NOTES="Derleme #${RUN} — ${GITHUB_SHA:0:7} — $(date -u '+%Y-%m-%d %H:%M UTC'). Tüm testler ve simülatör kontrolü geçti. Kurulum: docs/KURULUM.md"
+          FILES="out/Asist.ipa"
+          if [ -f out/Asist-imzasiz.ipa ]; then FILES="$FILES out/Asist-imzasiz.ipa"; fi
+          if gh release view son-surum -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload son-surum $FILES --clobber -R "$GITHUB_REPOSITORY"
+            gh release edit son-surum --notes "$NOTES" -R "$GITHUB_REPOSITORY"
+          else
+            gh release create son-surum $FILES --title "Asist — Son Sürüm" --notes "$NOTES" --latest -R "$GITHUB_REPOSITORY"
+          fi
+          echo "İndirme: https://github.com/$GITHUB_REPOSITORY/releases/download/son-surum/Asist.ipa" >> "$GITHUB_STEP_SUMMARY"

@@ -34,34 +34,46 @@ yenilemeyi ve ilk açılışta yapılacak ayarları anlatır. Mac gerekmez.
 
 ## 2. Bilgisayarı bir kez hazırla
 
-1. Microsoft Store'dan kurulmuş **iTunes** veya **iCloud** varsa kaldır (Ayarlar › Uygulamalar).
-2. apple.com'dan **Windows (64 bit) iTunes** ve Microsoft Store **dışı** **iCloud** kurulum dosyalarını indirip kur.
-   (Sideloadly sitesindeki "web iTunes / web iCloud" bağlantıları bunlara götürür.)
-3. **Sideloadly**'yi yalnızca resmi siteden (**sideloadly.io**) indirip kur.
-4. iPhone'u USB kabloyla bağla. iPhone'da **"Bu Bilgisayara Güvenilsin mi?" → Güven** de ve parolanı gir.
-5. (Önerilir) iTunes'ta iPhone simgesi → **Özet** → **"Bu iPhone ile Wi-Fi üzerinden eşzamanla"** kutusunu
-   işaretle → **Uygula**. Böylece sonraki yenilemeler kablosuz yapılabilir.
-6. Bilgisayarda sabit bir klasör aç: **`C:\Asist\`**. İndirdiğin IPA'yı hep buraya koyacaksın.
+> **USB girişi olan bilgisayarı kullan.** İlk kurulum kabloyla yapılır. Hangi bilgisayarda kurduysan haftalık
+> yenilemeyi de **hep o bilgisayarda ve aynı Apple ID ile** yap (ücretsiz imzayı başka bilgisayara taşımak
+> telefondaki imzayı geçersiz kılabilir). Bilgisayarında yalnız USB-C varsa **Lightning–USB-C** kablo da olur.
+
+1. Microsoft Store'dan kurulmuş **iTunes** veya **iCloud** varsa kaldır (Ayarlar › Uygulamalar). Microsoft Store ›
+   **Kitaplık**'ta görünüyorlarsa Store sürümüdür.
+2. Store **dışı** sürümleri kur:
+   - iTunes 64-bit: https://www.apple.com/itunes/download/win64
+   - iCloud (web): https://updates.cdn-apple.com/2020/windows/001-39935-20200911-1A70AA56-F448-11EA-8CC0-99D41950005E/iCloudSetup.exe
+3. **Sideloadly 64-bit**'i kur: https://sideloadly.io/SideloadlySetup64.exe
+   **Sideloadly ile iTunes aynı bit sürümü olmalı** (64-bit iTunes → 64-bit Sideloadly). 32-bit Sideloadly,
+   64-bit iTunes ile "Initializing…" yazıp kapanır.
+4. Bilgisayarı **yeniden başlat**. Sideloadly yine açılmazsa: sağ tık › **Yönetici olarak çalıştır**; Windows Güvenliği ›
+   Koruma geçmişi'nde engellenmişse izin ver.
+5. iPhone'u USB kabloyla bağla. iPhone'da **"Bu Bilgisayara Güvenilsin mi?" → Güven** de ve parolanı gir.
+6. (Önerilir) iTunes'ta iPhone simgesi → **Özet** → **"Bu iPhone ile Wi-Fi üzerinden eşzamanla"** kutusunu
+   işaretle → **Uygula**. Böylece sonraki yenilemeler kablosuz yapılabilir. (IPA'yı iTunes'a **sürükleme**;
+   IPA yalnız Sideloadly'ye verilir.)
+7. Bilgisayarda sabit bir klasör aç: **`C:\Asist\`**. İndirdiğin IPA'yı hep buraya koyacaksın.
 
 ---
 
 ## 3. IPA'yı indir
 
-1. GitHub'da depoyu aç → **Actions** → en üstteki **yeşil (✓)** "Asist CI" çalıştırmasına tıkla.
-2. Sayfanın altındaki **Artifacts** bölümünden **Asist.ipa**'yı indir (zip değil, doğrudan .ipa gelir).
-3. Dosyayı **`C:\Asist\Asist.ipa`** olarak kaydet (eskisinin üstüne yaz).
+En kolayı — giriş gerekmez, her zaman en son **testleri geçmiş** sürüm:
 
-> GitHub derleme dosyalarını **14 gün** saklar. Bu yüzden IPA'nın bir kopyası mutlaka `C:\Asist\` içinde dursun;
-> haftalık yenilemede GitHub'a girmen gerekmez.
+**https://github.com/gokhanbudak59/Asist/releases/download/son-surum/Asist.ipa**
 
-Aynı çalıştırmada bir de **Asist-imzasiz.ipa** vardır. Sadece bölüm 8'deki bir kurulum hatası çıkarsa kullan.
+Dosyayı **`C:\Asist\Asist.ipa`** olarak kaydet (eskisinin üstüne yaz).
+
+Aynı sayfada (https://github.com/gokhanbudak59/Asist/releases/tag/son-surum) bir de **Asist-imzasiz.ipa** vardır.
+Sadece bölüm 8'deki bir kurulum hatası çıkarsa kullan.
 
 ---
 
 ## 4. Sideloadly ile yükle
 
 1. Sideloadly'yi aç; üstte iPhone'unun seçili olduğunu gör.
-2. `C:\Asist\Asist.ipa` dosyasını Sideloadly penceresine sürükle.
+2. Sideloadly penceresinin sol üstündeki **IPA** simgesine tıkla ve `C:\Asist\Asist.ipa` dosyasını seç
+   (ya da dosyayı Sideloadly penceresine sürükle — iTunes'a değil).
 3. **Apple account** kutusuna Apple ID e-postanı yaz. **Her seferinde aynı Apple ID.**
 4. **Advanced Options**:
    - **Signing Mode: Apple ID Sideload** (varsayılan).

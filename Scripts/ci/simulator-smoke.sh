@@ -321,10 +321,12 @@ grant_privacy() {
 
 launch_app() {
   local why="$1" output=""
+  shift
   LAUNCH_NO=$((LAUNCH_NO + 1))
+  # Ek argümanlar uygulamaya geçer (ör. -AsistDebugURL asist://…; yalnız Debug derlemesi okur, RootView).
   if ! output=$(xcrun simctl launch --terminate-running-process \
       --stdout="$OUT/ham/app-stdout-$LAUNCH_NO.log" --stderr="$OUT/app-stderr-$LAUNCH_NO.log" \
-      "$UDID" "$BUNDLE_ID" 2>&1); then
+      "$UDID" "$BUNDLE_ID" "$@" 2>&1); then
     note "HATA: uygulama başlatılamadı ($why): $output"
     APP_PID=""
     return 1
@@ -391,11 +393,13 @@ capture() {
   fi
 }
 
+# `simctl openurl` iOS'ta "Open in Asist?" sistem sorusu açar ve ekranı kapatır; bu yüzden uygulama bağlantıyla
+# yeniden başlatılır (Debug derlemesi -AsistDebugURL argümanını süreç başına bir kez işler, RootView).
 visit() {
-  local url="$1" name="$2" what="$3" wait_s="${4:-4}"
-  log "Bağlantı: $url"
-  if ! xcrun simctl openurl "$UDID" "$url" >>"$LOG" 2>&1; then
-    note "UYARI: openurl başarısız: $url"
+  local url="$1" name="$2" what="$3" wait_s="${4:-7}"
+  log "Bağlantı (başlatma argümanı): $url"
+  if ! launch_app "$name" -AsistDebugURL "$url"; then
+    note "UYARI: bağlantıyla başlatma başarısız: $url"
   fi
   sleep "$wait_s"
   capture "$name" "$what"
@@ -559,7 +563,7 @@ main() {
     note "UYARI: tohumdan kayıt kimliği gelmedi; ayrıntı ekranı atlandı"
   fi
   visit "asist://gunsonu" "08-gun-sonu" "Gün sonu (asist://gunsonu)"
-  visit "asist://yaz" "09-yaz" "Yaz sayfası (asist://yaz)" 5
+  visit "asist://yaz" "09-yaz" "Yaz sayfası (asist://yaz)" 9
   visit "asist://sekme/bugun" "10-bugun-sekme" "asist://sekme/bugun (sayfa kapanır, Bugün kökü)"
 
   # 2) Temiz kurulum (tohumsuz): tanıtım ekranı

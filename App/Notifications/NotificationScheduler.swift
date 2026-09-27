@@ -204,6 +204,20 @@ final class NotificationScheduler {
         return pending.count
     }
 
+    /// Next trigger dates of pending planner-managed one-shot requests, keyed by identifier
+    /// (`PlanInput.pendingNagDates`): lets the planner keep nags the rate limiter already shifted.
+    func pendingOneShotDates() async -> [String: Date] {
+        let pending = await center.pendingNotificationRequests()
+        var result: [String: Date] = [:]
+        for request in pending {
+            guard NotificationID.isPlannerManaged(request.identifier) else { continue }
+            guard let trigger = request.trigger, !trigger.repeats else { continue }
+            guard let date = NotificationScheduler.nextDate(of: trigger) else { continue }
+            result[request.identifier] = date
+        }
+        return result
+    }
+
     /// Ad hoc one-shot (test, moved feedback) with an "asist.x." id; trigger ≥ 2 s.
     func addUnmanaged(id: String, text: NotificationText, after seconds: TimeInterval, categoryID: String,
                       interruption: PlannedNotification.Interruption, itemID: UUID?) async {

@@ -134,8 +134,11 @@ final class ReminderEngine {
             return
         }
 
-        // 3: plan.
-        let input = makeInput(now: now, allowTimeSensitive: allowTimeSensitive)
+        // 3: plan. Pending one-shot dates let the planner keep nags the rate limiter already shifted.
+        let pendingDates = await scheduler.pendingOneShotDates()
+        guard store.isLoaded else { return }
+        var input = makeInput(now: now, allowTimeSensitive: allowTimeSensitive)
+        input.pendingNagDates = pendingDates
         let plan = NagPlanner.plan(input)
 
         // 4: diff-apply (near-due one-shots of open items and reserved notifications survive the planner margins).

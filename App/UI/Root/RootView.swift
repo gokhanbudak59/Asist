@@ -60,6 +60,9 @@ struct RootView: View {
         case .active:
             Task { @MainActor in
                 await AppEnvironment.shared.sceneDidBecomeActive()
+                #if DEBUG
+                RootView.consumeDebugLaunchURL(router: router)
+                #endif
                 consumePending()
             }
         case .background:
@@ -70,6 +73,21 @@ struct RootView: View {
             break
         }
     }
+
+    #if DEBUG
+    /// CI simulator smoke test only (Debug builds): `simctl launch … -AsistDebugURL asist://…` opens a deep link
+    /// without the system "Open in Asist?" prompt that `simctl openurl` shows. Consumed once per process.
+    @MainActor private static var debugURLConsumed = false
+
+    @MainActor
+    private static func consumeDebugLaunchURL(router: AppRouter) {
+        guard !debugURLConsumed else { return }
+        debugURLConsumed = true
+        guard let raw = UserDefaults.standard.string(forKey: "AsistDebugURL"),
+              let url = URL(string: raw) else { return }
+        router.handle(url: url)
+    }
+    #endif
 
     /// Executes the queued action (deep link, notification tap, App Intent) once the scene is active.
     @MainActor
